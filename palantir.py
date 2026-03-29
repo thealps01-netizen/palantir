@@ -497,6 +497,10 @@ class Palantir(QWidget):
             save_cfg(self.cfg)
         elif action == act_quit: self._quit()
 
+    def closeEvent(self, e):
+        """Dışarıdan gelen close mesajlarını yoksay — sadece _quit() kapatabilir."""
+        e.ignore()
+
     # ── Drag to move ──────────────────────────────────────────────────────────
     def mousePressEvent(self, e):
         if e.button() == Qt.MouseButton.LeftButton:
@@ -612,80 +616,34 @@ class SplashScreen(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        t   = min(self._angle / 360.0, 1.0)
-        cx  = 80
+        cx, cy, r = 80, 80, 54
 
         # Arka plan dairesi
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(QColor(8, 9, 22, 235))
-        p.drawEllipse(12, 12, 136, 136)
+        p.drawEllipse(cx - r - 14, cy - r - 14, (r + 14) * 2, (r + 14) * 2)
 
-        # Renk: kilitli (accent) → açık (yeşil)
-        if t < 0.75:
-            color = QColor(100, 116, 240)
-        else:
-            tt = (t - 0.75) / 0.25
-            color = QColor(
-                int(100 + (80  - 100) * tt),
-                int(116 + (200 - 116) * tt),
-                int(240 + (120 - 240) * tt),
-            )
-        bg = QColor(8, 9, 22)
-
-        # Kilit geometrisi
-        arm_x    = 11   # şekle kollarının merkeze uzaklığı
-        arc_r    = 11   # yay yarıçapı
-        body_w   = 42
-        body_h   = 30
-        body_top = 74   # kilit gövdesinin üst kenarı (ortalanmış)
-        arm_top_y = body_top - 7  # kolların yaya bağlandığı y noktası = 67
-
-        # Sağ kol animasyonu: aşağıdan (kilitli) sağ-yukarıya (açık) sallanır
-        locked_ex, locked_ey = cx + arm_x, arm_top_y + 17   # 84 → gövde içinde
-        open_ex,   open_ey   = cx + arm_x + 15, arm_top_y - 10  # açık konum
-        right_ex = int(locked_ex + t * (open_ex - locked_ex))
-        right_ey = int(locked_ey + t * (open_ey - locked_ey))
-
-        pen = QPen(color, 4)
-        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-        p.setPen(pen)
+        # İz (track)
+        track_pen = QPen(QColor(25, 27, 55), 5)
+        track_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        p.setPen(track_pen)
         p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawEllipse(cx - r, cy - r, r * 2, r * 2)
 
-        # Sol kol (sabit)
-        p.drawLine(cx - arm_x, arm_top_y, cx - arm_x, body_top + 10)
+        # Dolum yayı
+        arc_pen = QPen(QColor(100, 116, 240), 5)
+        arc_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        p.setPen(arc_pen)
+        p.drawArc(cx - r, cy - r, r * 2, r * 2,
+                  90 * 16, -int(self._angle * 16))
 
-        # Üst yay (yarım daire — sol koldan sağ kola)
-        p.drawArc(cx - arm_x, arm_top_y - arc_r, arm_x * 2, arc_r * 2,
-                  0, 180 * 16)
-
-        # Sağ kol (animasyonlu)
-        p.drawLine(cx + arm_x, arm_top_y, right_ex, right_ey)
-
-        # Gövde dolgusu (kolların gövde içindeki kısmını gizler)
-        p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(bg)
-        p.drawRoundedRect(cx - body_w // 2, body_top, body_w, body_h, 6, 6)
-
-        # Gövde kenarlığı
-        p.setPen(QPen(color, 4))
-        p.setBrush(Qt.BrushStyle.NoBrush)
-        p.drawRoundedRect(cx - body_w // 2, body_top, body_w, body_h, 6, 6)
-
-        # Anahtar deliği
-        p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(color)
-        p.drawEllipse(cx - 5, body_top + 7, 10, 10)
-        p.drawRect(cx - 3, body_top + 15, 6, 7)
-
-        # Alt metin
-        p.setPen(QPen(QColor(140, 145, 190)))
+        # Metin
+        p.setPen(QPen(QColor(160, 165, 210)))
         font = QFont("Bahnschrift", 8)
         font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 3)
         font.setBold(True)
         p.setFont(font)
-        p.drawText(0, body_top + body_h + 6, 160, 24,
-                   Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
-                   "PALANTÍR")
+        p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "PALANTÍR")
 
         p.end()
 

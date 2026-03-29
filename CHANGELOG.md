@@ -6,6 +6,14 @@ Versiyonlama: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.0.2] — 2026-03-30
+
+### Düzeltildi
+- Dış uygulama close mesajları artık overlay'i gizlemiyor (`closeEvent` → `ignore`)
+- Splash screen dolum yayı animasyonuna döndü
+
+---
+
 ## [1.0.1] — 2026-03-30
 
 ### Değişti
