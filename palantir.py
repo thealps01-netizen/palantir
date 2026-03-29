@@ -183,6 +183,7 @@ class Palantir(QWidget):
             self._actual_quit()
 
     def _actual_quit(self):
+        self._quitting = True
         self._hw_worker.stop()
         self._hw_thread.quit()
         self._hw_thread.wait(2000)
@@ -499,7 +500,10 @@ class Palantir(QWidget):
 
     def closeEvent(self, e):
         """Dışarıdan gelen close mesajlarını yoksay — sadece _quit() kapatabilir."""
-        e.ignore()
+        if getattr(self, '_quitting', False):
+            e.accept()
+        else:
+            e.ignore()
 
     # ── Drag to move ──────────────────────────────────────────────────────────
     def mousePressEvent(self, e):

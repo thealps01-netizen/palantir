@@ -6,6 +6,13 @@ Versiyonlama: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.0.3] — 2026-03-30
+
+### Düzeltildi
+- Quit: `closeEvent` + `_quitting` flag ile `QApplication.quit()` artık event loop'tan düzgün çıkıyor
+
+---
+
 ## [1.0.2] — 2026-03-30
 
 ### Düzeltildi
