@@ -10,7 +10,11 @@ Real-time FPS, GPU/CPU usage, temperatures, power draw, clocks and RAM — right
 
 ---
 
-![Palantir Screenshot](assets/screenshot.png)
+<div align="center">
+  <img src="assets/overlay.png" alt="Overlay" width="260"/>
+  &nbsp;&nbsp;&nbsp;
+  <img src="assets/settings.png" alt="Settings" width="320"/>
+</div>
 
 ---
 
