@@ -6,6 +6,17 @@ Versiyonlama: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.0.1] — 2026-03-30
+
+### Değişti
+- Splash screen: dolum yayı → kilit açılma animasyonu (kol sağa-yukarı sallanır, renk accent→yeşil)
+- Overlay köşeleri: border-radius 18px (settings dialog ile tutarlı)
+
+### Düzeltildi
+- Sağ tık → Quit çalışmıyordu; `QTimer.singleShot` ile güvenilir kapanış sağlandı
+
+---
+
 ## [1.0.0] — 2026-03-30
 
 ### Eklendi

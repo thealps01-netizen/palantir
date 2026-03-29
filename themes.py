@@ -65,7 +65,7 @@ _WIDGET_CSS_TPL = """
 Palantir {{
     background: {bg};
     border: 1px solid {border};
-    border-radius: 0px;
+    border-radius: 18px;
 }}
 """
 
