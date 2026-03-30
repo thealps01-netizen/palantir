@@ -47,6 +47,7 @@ class Palantir(QWidget):
         self._home_pos      = None
         self._sliding       = False
         self._slide_anim    = None
+        self._quitting      = False
 
         self._apply_window_flags()
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
@@ -177,13 +178,13 @@ class Palantir(QWidget):
 
     def _quit(self):
         _log.info("Palantir shutting down.")
+        self._quitting = True
         if self.isVisible():
             self._play_outro()
         else:
             self._actual_quit()
 
     def _actual_quit(self):
-        self._quitting = True
         self._hw_worker.stop()
         self._hw_thread.quit()
         self._hw_thread.wait(2000)
@@ -317,11 +318,13 @@ class Palantir(QWidget):
     # ── Hover animation ───────────────────────────────────────────────────────
     def enterEvent(self, e):
         super().enterEvent(e)
-        self._fade_to(self.cfg.get("hover_opacity", 20) / 100)
+        if not self._quitting:
+            self._fade_to(self.cfg.get("hover_opacity", 20) / 100)
 
     def leaveEvent(self, e):
         super().leaveEvent(e)
-        self._fade_to(self.cfg["opacity"] / 100)
+        if not self._quitting:
+            self._fade_to(self.cfg["opacity"] / 100)
 
     def _fade_to(self, target):
         self._anim.stop()
