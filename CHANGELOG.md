@@ -6,6 +6,13 @@ Versiyonlama: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.0.5] — 2026-03-30
+
+### Düzeltildi
+- Sağ tık quit animasyonu: pencereyi göster sonra animasyon oynat
+
+---
+
 ## [1.0.4] — 2026-03-30
 
 ### Düzeltildi
