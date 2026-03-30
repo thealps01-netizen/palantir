@@ -176,17 +176,23 @@ class Palantir(QWidget):
         )
 
     def _quit(self):
+        if getattr(self, '_quitting', False):
+            return
         _log.info("Palantir shutting down.")
-        if self.isVisible():
-            self._play_outro()
-        else:
-            self._actual_quit()
+        # Pencereyi göster, sonra çıkış animasyonunu oynatsın
+        if not self.isVisible():
+            self.show()
+        self._play_outro()
 
     def _actual_quit(self):
+        if getattr(self, '_quitting', False):
+            return
         self._quitting = True
         self._hw_worker.stop()
         self._hw_thread.quit()
-        self._hw_thread.wait(2000)
+        # Updater thread'i de temizle
+        if hasattr(self, '_updater') and self._updater.isRunning():
+            self._updater.quit()
         self._tray.hide()
         QApplication.instance().quit()
 
@@ -196,23 +202,23 @@ class Palantir(QWidget):
         start = self.pos()
         end   = QPoint(start.x(), start.y() + 30)
 
-        pos_anim = QPropertyAnimation(self, b"pos")
-        pos_anim.setDuration(400)
-        pos_anim.setStartValue(start)
-        pos_anim.setEndValue(end)
-        pos_anim.setEasingCurve(QEasingCurve.Type.InCubic)
+        self._outro_pos_anim = QPropertyAnimation(self, b"pos")
+        self._outro_pos_anim.setDuration(350)
+        self._outro_pos_anim.setStartValue(start)
+        self._outro_pos_anim.setEndValue(end)
+        self._outro_pos_anim.setEasingCurve(QEasingCurve.Type.InCubic)
 
-        fade_anim = QPropertyAnimation(self, b"windowOpacity")
-        fade_anim.setDuration(400)
-        fade_anim.setStartValue(self.windowOpacity())
-        fade_anim.setEndValue(0.0)
-        fade_anim.setEasingCurve(QEasingCurve.Type.InCubic)
+        self._outro_fade_anim = QPropertyAnimation(self, b"windowOpacity")
+        self._outro_fade_anim.setDuration(350)
+        self._outro_fade_anim.setStartValue(self.windowOpacity())
+        self._outro_fade_anim.setEndValue(0.0)
+        self._outro_fade_anim.setEasingCurve(QEasingCurve.Type.InCubic)
 
         self._outro_group = QParallelAnimationGroup(self)
-        self._outro_group.addAnimation(pos_anim)
-        self._outro_group.addAnimation(fade_anim)
+        self._outro_group.addAnimation(self._outro_pos_anim)
+        self._outro_group.addAnimation(self._outro_fade_anim)
+        self._outro_group.finished.connect(self._actual_quit)
         self._outro_group.start()
-        QTimer.singleShot(420, self._actual_quit)
 
     # ── Tray left-click: slide overlay down/up ────────────────────────────────
     def _on_tray_activated(self, reason):
@@ -230,18 +236,19 @@ class Palantir(QWidget):
 
     def _slide_out(self):
         self._sliding = True
+        if self._slide_anim:
+            self._slide_anim.stop()
         scr  = (QApplication.screenAt(self.pos()) or QApplication.primaryScreen()).availableGeometry()
-        anim = QPropertyAnimation(self, b"pos")
-        anim.setDuration(280)
-        anim.setStartValue(self.pos())
-        anim.setEndValue(QPoint(self.x(), scr.bottom() + self.height()))
-        anim.setEasingCurve(QEasingCurve.Type.InCubic)
+        self._slide_anim = QPropertyAnimation(self, b"pos")
+        self._slide_anim.setDuration(280)
+        self._slide_anim.setStartValue(self.pos())
+        self._slide_anim.setEndValue(QPoint(self.x(), scr.bottom() + self.height()))
+        self._slide_anim.setEasingCurve(QEasingCurve.Type.InCubic)
         def _done():
             self.hide()
             self._sliding = False
-        anim.finished.connect(_done)
-        self._slide_anim = anim
-        anim.start()
+        self._slide_anim.finished.connect(_done)
+        self._slide_anim.start()
 
     def _play_intro(self):
         """Açılışta yukarıdan kayarak + fade-in animasyonu."""
@@ -250,21 +257,21 @@ class Palantir(QWidget):
         self.move(start)
         self.setWindowOpacity(0.0)
 
-        pos_anim = QPropertyAnimation(self, b"pos")
-        pos_anim.setDuration(500)
-        pos_anim.setStartValue(start)
-        pos_anim.setEndValue(target)
-        pos_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._intro_pos_anim = QPropertyAnimation(self, b"pos")
+        self._intro_pos_anim.setDuration(500)
+        self._intro_pos_anim.setStartValue(start)
+        self._intro_pos_anim.setEndValue(target)
+        self._intro_pos_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
 
-        fade_anim = QPropertyAnimation(self, b"windowOpacity")
-        fade_anim.setDuration(500)
-        fade_anim.setStartValue(0.0)
-        fade_anim.setEndValue(self.cfg["opacity"] / 100)
-        fade_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._intro_fade_anim = QPropertyAnimation(self, b"windowOpacity")
+        self._intro_fade_anim.setDuration(500)
+        self._intro_fade_anim.setStartValue(0.0)
+        self._intro_fade_anim.setEndValue(self.cfg["opacity"] / 100)
+        self._intro_fade_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
 
         self._intro_group = QParallelAnimationGroup(self)
-        self._intro_group.addAnimation(pos_anim)
-        self._intro_group.addAnimation(fade_anim)
+        self._intro_group.addAnimation(self._intro_pos_anim)
+        self._intro_group.addAnimation(self._intro_fade_anim)
         self._intro_group.start()
 
     def _slide_in(self):
