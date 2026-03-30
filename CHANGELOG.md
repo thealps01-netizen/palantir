@@ -6,6 +6,13 @@ Versiyonlama: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.0.8] — 2026-03-30
+
+### Düzeltildi
+- v1.0.3 kodu geri yüklendi (kararlı sürüm)
+
+---
+
 ## [1.0.7] — 2026-03-30
 
 ### Düzeltildi
