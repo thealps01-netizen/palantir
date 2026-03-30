@@ -180,12 +180,15 @@ class Palantir(QWidget):
             return
         self._quitting = True
         _log.info("Palantir shutting down.")
-        self._play_outro()
+        if self.isVisible():
+            self._play_outro()
+        else:
+            self._actual_quit()
 
     def _actual_quit(self):
         self._hw_worker.stop()
         self._hw_thread.quit()
-        # Updater thread'i de temizle
+        self._hw_thread.wait(2000)
         if hasattr(self, '_updater') and self._updater.isRunning():
             self._updater.quit()
         self._tray.hide()
@@ -193,18 +196,6 @@ class Palantir(QWidget):
 
     def _play_outro(self):
         """Kapanışta aşağıya kayarak + fade-out animasyonu."""
-        # Eğer pencere gizliyse eski konumuna getirip göster
-        if not self.isVisible():
-            restore = self._home_pos or (
-                QPoint(self.cfg["pos_x"], self.cfg["pos_y"])
-                if self.cfg.get("pos_x", -1) >= 0
-                else QPoint(
-                    QApplication.primaryScreen().availableGeometry().width() - self.width() - 20, 20
-                )
-            )
-            self.move(restore)
-            self.setWindowOpacity(self.cfg["opacity"] / 100)
-            self.show()
         self._anim.stop()
         start = self.pos()
         end   = QPoint(start.x(), start.y() + 30)

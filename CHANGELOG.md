@@ -6,6 +6,14 @@ Versiyonlama: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.0.7] — 2026-03-30
+
+### Düzeltildi
+- Quit: görünür pencerede animasyon, gizli pencerede direkt kapanma
+- Thread temizliği düzeltildi (hw_thread.wait geri eklendi)
+
+---
+
 ## [1.0.6] — 2026-03-30
 
 ### Eklendi
