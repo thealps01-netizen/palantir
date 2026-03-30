@@ -581,7 +581,7 @@ def prompt_and_install(tag: str, download_url: str, notes: str = "", parent=None
             _log.error("ShellExecuteExW failed (err=%d) — installer not launched", err)
 
         from PyQt6.QtCore import QTimer
-        QTimer.singleShot(3000, QApplication.instance().quit)
+        QTimer.singleShot(500, parent._quit if parent and hasattr(parent, '_quit') else QApplication.instance().quit)
 
     def _on_error(msg_text: str):
         _active.clear()
