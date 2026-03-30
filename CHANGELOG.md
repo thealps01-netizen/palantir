@@ -6,6 +6,16 @@ Versiyonlama: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.0.6] — 2026-03-30
+
+### Eklendi
+- Assets (overlay.png, settings.png) ve icon dosyaları repo'ya eklendi
+
+### Düzeltildi
+- Gizli pencereyi eski konumuna geri getirip kapanış animasyonu oynat
+
+---
+
 ## [1.0.5] — 2026-03-30
 
 ### Düzeltildi
