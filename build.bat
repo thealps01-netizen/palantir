@@ -23,6 +23,18 @@ echo  [2/4] Generating icon...
 python tools\make_icon.py
 if errorlevel 1 ( echo  WARNING: Icon generation failed, building without icon. )
 
+:: ── Inject version into file_version_info.txt ────────────────────────────────
+for /f %%v in ('python -c "from version import __version__; print(__version__)"') do set APP_VER=%%v
+powershell -Command " ^
+  $v = '%APP_VER%'; ^
+  $vt = $v -replace '\.', ', '; ^
+  (Get-Content file_version_info.txt) ^
+    -replace 'filevers=\(.*?\)', \"filevers=($vt, 0)\" ^
+    -replace 'prodvers=\(.*?\)', \"prodvers=($vt, 0)\" ^
+    -replace \"'FileVersion',\s*'.*?'\", \"'FileVersion', '$v.0'\" ^
+    -replace \"'ProductVersion',\s*'.*?'\", \"'ProductVersion', '$v.0'\" ^
+  | Set-Content file_version_info.txt"
+
 :: ── Build exe (onedir via Palantir.spec) ─────────────────────────────────────
 echo  [3/4] Building Palantir.exe...
 python -m PyInstaller Palantir.spec --noconfirm
