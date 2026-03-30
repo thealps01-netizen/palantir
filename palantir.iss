@@ -1,6 +1,6 @@
 #define AppName    "Palantir"
 #ifndef AppVersion
-  #define AppVersion "1.0.3"
+  #define AppVersion "1.0.9"
 #endif
 #define AppExe     "Palantir.exe"
 #define AppDir     "dist\Palantir"

@@ -193,6 +193,8 @@ class Palantir(QWidget):
     def _play_outro(self):
         """Kapanışta aşağıya kayarak + fade-out animasyonu."""
         self._anim.stop()
+        cfg_opacity = self.cfg["opacity"] / 100
+        self.setWindowOpacity(cfg_opacity)
         start = self.pos()
         end   = QPoint(start.x(), start.y() + 30)
 
@@ -204,7 +206,7 @@ class Palantir(QWidget):
 
         fade_anim = QPropertyAnimation(self, b"windowOpacity")
         fade_anim.setDuration(400)
-        fade_anim.setStartValue(self.windowOpacity())
+        fade_anim.setStartValue(cfg_opacity)
         fade_anim.setEndValue(0.0)
         fade_anim.setEasingCurve(QEasingCurve.Type.InCubic)
 
