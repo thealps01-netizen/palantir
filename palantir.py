@@ -193,6 +193,9 @@ class Palantir(QWidget):
 
     def _play_outro(self):
         """Kapanışta aşağıya kayarak + fade-out animasyonu."""
+        # Eğer pencere gizliyse göster
+        if not self.isVisible():
+            self.show()
         self._anim.stop()
         start = self.pos()
         end   = QPoint(start.x(), start.y() + 30)
