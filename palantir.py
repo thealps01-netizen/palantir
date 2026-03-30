@@ -178,16 +178,11 @@ class Palantir(QWidget):
     def _quit(self):
         if getattr(self, '_quitting', False):
             return
+        self._quitting = True
         _log.info("Palantir shutting down.")
-        # Pencereyi göster, sonra çıkış animasyonunu oynatsın
-        if not self.isVisible():
-            self.show()
         self._play_outro()
 
     def _actual_quit(self):
-        if getattr(self, '_quitting', False):
-            return
-        self._quitting = True
         self._hw_worker.stop()
         self._hw_thread.quit()
         # Updater thread'i de temizle
