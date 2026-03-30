@@ -44,6 +44,16 @@ jobs:
             -replace "'ProductVersion',\s*'.*?'", "'ProductVersion', '$v.0'" |
           Set-Content file_version_info.txt
 
+      - name: Inject version into version.py
+        shell: pwsh
+        run: |
+          $v = "${{ steps.version.outputs.VERSION }}"
+          $vt = $v -replace '\.', ', '
+          (Get-Content version.py) `
+            -replace '__version__\s*=\s*"[^"]*"', "__version__      = `"$v`"" `
+            -replace '__version_tuple__\s*=\s*\([^)]*\)', "__version_tuple__ = ($vt)" |
+          Set-Content version.py
+
       - name: Generate icon
         run: python tools/make_icon.py
 
