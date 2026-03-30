@@ -6,6 +6,13 @@ Versiyonlama: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.0.4] — 2026-03-30
+
+### Düzeltildi
+- Sağ tık menüsünden çıkışta (minimize durumdan) kapanma animasyonu artık çalışıyor
+
+---
+
 ## [1.0.3] — 2026-03-30
 
 ### Düzeltildi
