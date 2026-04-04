@@ -1,5 +1,5 @@
 """version.py — Single source of truth for Palantir version info."""
 
-__version__      = "1.0.12"
-__version_tuple__ = (1, 0, 12)
+__version__      = "1.0.13"
+__version_tuple__ = (1, 0, 13)
 APP_NAME         = "Palantir"
