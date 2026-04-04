@@ -27,7 +27,7 @@ from dialogs import WelcomeDialog, SettingsDialog
 _GITHUB_OWNER = "thealps01-netizen"
 _GITHUB_REPO  = "palantir"                 # ← repo adı
 from cfg import (
-    SENSOR_CATALOG, ROWS_CFG, DEFAULT_CFG, SETTINGS_FILE,
+    SENSOR_CATALOG, SETTINGS_FILE,
     load_cfg, save_cfg, eff_color, default_color,
     active_sensor_defs,
     is_startup_enabled, set_startup,
