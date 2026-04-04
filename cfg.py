@@ -83,9 +83,6 @@ SENSOR_CATALOG: dict[str, "SensorDef"] = {s.key: s for s in [
     SensorDef("ram_usage",  "RAM USE",  "%",   "#9b59f5", 100,  ()),  # Windows API
 ]}
 
-# Backward-compatibility alias
-ROWS_CFG: list[SensorDef] = list(SENSOR_CATALOG.values())
-
 _DEFAULT_ACTIVE = ["fps", "gpu_usage", "gpu_temp", "cpu_usage", "cpu_temp", "ram_usage"]
 
 DEFAULT_CFG = {
