@@ -103,7 +103,7 @@ class UpdateChecker(QObject):
     check_failed     = pyqtSignal()
 
     def __init__(self, owner: str, repo: str, parent=None):
-        super().__init__(parent)
+        super().__init__()
         self._owner = owner
         self._repo  = repo
         self._thread = QThread()
@@ -155,7 +155,7 @@ class InstallerDownloader(QObject):
     error    = pyqtSignal(str)
 
     def __init__(self, url: str, parent=None):
-        super().__init__(parent)
+        super().__init__()
         self._url    = url
         self._thread = QThread()
         self.moveToThread(self._thread)
