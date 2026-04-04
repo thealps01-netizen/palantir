@@ -575,10 +575,8 @@ class SplashScreen(QWidget):
             Qt.WindowType.WindowStaysOnTopHint |
             Qt.WindowType.Tool
         )
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.setFixedSize(160, 160)
-        self.setWindowOpacity(0.9)
 
         scr = QApplication.primaryScreen().geometry()
         self.move(
@@ -610,7 +608,7 @@ class SplashScreen(QWidget):
     def _fade_out(self):
         anim = QPropertyAnimation(self, b"windowOpacity")
         anim.setDuration(250)
-        anim.setStartValue(1.0)
+        anim.setStartValue(self.windowOpacity())
         anim.setEndValue(0.0)
         anim.setEasingCurve(QEasingCurve.Type.InCubic)
         def _done():
@@ -627,9 +625,11 @@ class SplashScreen(QWidget):
 
         cx, cy, r = 80, 80, 54
 
+        p.fillRect(self.rect(), QColor(8, 9, 22))
+
         # Arka plan dairesi
         p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(QColor(8, 9, 22, 235))
+        p.setBrush(QColor(8, 9, 22))
         p.drawEllipse(cx - r - 14, cy - r - 14, (r + 14) * 2, (r + 14) * 2)
 
         # İz (track)
