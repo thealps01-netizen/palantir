@@ -15,7 +15,9 @@ _APP_NAME    = "Palantir"
 def _startup_cmd():
     if getattr(sys, "frozen", False):
         return f'"{sys.executable}"'
-    pythonw = sys.executable.replace("python.exe", "pythonw.exe")
+    pythonw = os.path.join(os.path.dirname(sys.executable), "pythonw.exe")
+    if not os.path.exists(pythonw):
+        pythonw = sys.executable
     return f'"{pythonw}" "{os.path.abspath(sys.argv[0])}"'
 
 

@@ -701,6 +701,11 @@ if __name__ == "__main__":
 
     is_first_run = not os.path.exists(SETTINGS_FILE)
 
+    # ── Auto-refresh startup registry (fixes stale python.exe entries) ─────────
+    if is_startup_enabled():
+        set_startup(True)
+        _log.info("Startup registry entry refreshed.")
+
     w = Palantir()
     w._apply_no_activate()
     _log.info("Log directory: %s", LOG_DIR)
