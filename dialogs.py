@@ -324,6 +324,12 @@ class SettingsDialog(QDialog):
         self.sld_hv.setAccessibleDescription("Opacity when the mouse hovers over the overlay (5–80%)")
         layout.addLayout(row_hv)
 
+        row_sc, self.sld_sc, _ = slider_row(
+            "Size", 60, 200, self.cfg.get("scale", 100), fmt="{v}%")
+        self.sld_sc.setAccessibleName("Overlay size")
+        self.sld_sc.setAccessibleDescription("Scale of the overlay widget (60–200%)")
+        layout.addLayout(row_sc)
+
         row_upd = QHBoxLayout()
         row_upd.addWidget(QLabel("Update Interval"))
         row_upd.addStretch()
@@ -454,7 +460,8 @@ class SettingsDialog(QDialog):
 
         # ── Tab order ─────────────────────────────────────────────────────────
         QWidget.setTabOrder(self.sld_op,    self.sld_hv)
-        QWidget.setTabOrder(self.sld_hv,    self.cmb)
+        QWidget.setTabOrder(self.sld_hv,    self.sld_sc)
+        QWidget.setTabOrder(self.sld_sc,    self.cmb)
         QWidget.setTabOrder(self.cmb,       self.cmb_theme)
         QWidget.setTabOrder(self.cmb_theme, self.chk_top)
         QWidget.setTabOrder(self.chk_top,   self.chk_startup)
@@ -589,6 +596,7 @@ class SettingsDialog(QDialog):
     def _apply(self):
         self.cfg["opacity"]       = self.sld_op.value()
         self.cfg["hover_opacity"] = self.sld_hv.value()
+        self.cfg["scale"]         = self.sld_sc.value()
         self.cfg["update_ms"]     = self.cmb.currentData()
         self.cfg["always_on_top"] = self.chk_top.isChecked()
         set_startup(self.chk_startup.isChecked())

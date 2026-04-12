@@ -97,6 +97,7 @@ DEFAULT_CFG = {
     "pos_x":           -1,
     "pos_y":           -1,
     "theme":           "dark",
+    "scale":           100,
     "active_sensors":  list(_DEFAULT_ACTIVE),
     "visible":         {k: True for k in _DEFAULT_ACTIVE},
     "colors":          {},
@@ -130,6 +131,7 @@ def _sanitize_cfg(cfg: dict) -> dict:
 
     cfg["opacity"]       = clamp_int(cfg["opacity"],       20,  100, DEFAULT_CFG["opacity"])
     cfg["hover_opacity"] = clamp_int(cfg["hover_opacity"],  5,   80, DEFAULT_CFG["hover_opacity"])
+    cfg["scale"]         = clamp_int(cfg.get("scale", 100), 60,  200, DEFAULT_CFG["scale"])
     cfg["update_ms"]     = snap_ms(cfg["update_ms"])
     cfg["locked"]        = bool(cfg["locked"])
     cfg["always_on_top"] = bool(cfg["always_on_top"])
@@ -155,7 +157,7 @@ def load_cfg():
         cfg = dict(DEFAULT_CFG)
         # Scalar fields
         for k in ("opacity", "hover_opacity", "update_ms", "locked",
-                  "always_on_top", "pos_x", "pos_y", "theme",
+                  "always_on_top", "pos_x", "pos_y", "theme", "scale",
                   "skipped_version"):
             if k in saved:
                 cfg[k] = saved[k]

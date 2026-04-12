@@ -297,6 +297,14 @@ class Palantir(QWidget):
         if not is_high_contrast():
             self.setStyleSheet(make_widget_css(self.cfg.get("theme", "dark")))
 
+    def _s(self, px: int) -> int:
+        """Pixel değerini mevcut scale faktörüyle ölçekler."""
+        return max(1, round(px * self.cfg.get("scale", 100) / 100))
+
+    def _sp(self, pt: int) -> int:
+        """Font punto değerini mevcut scale faktörüyle ölçekler."""
+        return max(6, round(pt * self.cfg.get("scale", 100) / 100))
+
     def _apply_window_flags(self):
         flags = (Qt.WindowType.FramelessWindowHint |
                  Qt.WindowType.Tool)
@@ -334,46 +342,49 @@ class Palantir(QWidget):
 
     # ── Layout ────────────────────────────────────────────────────────────────
     def _build(self):
-        root = QVBoxLayout(self)
-        root.setContentsMargins(18, 14, 18, 14)
-        root.setSpacing(0)
+        self._root_layout = QVBoxLayout(self)
+        self._root_layout.setSpacing(0)
+        self._root_layout.setContentsMargins(self._s(18), self._s(14), self._s(18), self._s(14))
 
-        title_row = QHBoxLayout()
-        title_row.setContentsMargins(0, 0, 0, 10)
+        self._title_row_layout = QHBoxLayout()
+        title_row = self._title_row_layout
+        title_row.setContentsMargins(0, 0, 0, self._s(10))
         self._title_lbl = QLabel("PALANTÍR")
         self._gear = QLabel("\u22ee")
-        self._gear.setStyleSheet("color:#6666aa; font:14pt; padding:0 2px; margin-top:-2px;")
         self._gear.setCursor(Qt.CursorShape.PointingHandCursor)
         self._gear.setToolTip("Settings")
         title_row.addWidget(self._title_lbl)
         title_row.addStretch()
         title_row.addWidget(self._gear)
-        root.addLayout(title_row)
+        self._root_layout.addLayout(title_row)
 
         self._sep = QWidget()
         self._sep.setFixedHeight(1)
         self._sep.setStyleSheet("background:#13142c;")
-        root.addWidget(self._sep)
-        root.addSpacing(9)
+        self._root_layout.addWidget(self._sep)
+        self._gap1 = QWidget(); self._gap1.setFixedHeight(self._s(9))
+        self._root_layout.addWidget(self._gap1)
 
         # Sensor rows container — rebuilt by _rebuild_sensors()
         self._rows_container = QWidget()
         self._rows_layout = QVBoxLayout(self._rows_container)
         self._rows_layout.setContentsMargins(0, 0, 0, 0)
         self._rows_layout.setSpacing(0)
-        root.addWidget(self._rows_container)
+        self._root_layout.addWidget(self._rows_container)
 
-        root.addSpacing(9)
+        self._gap2 = QWidget(); self._gap2.setFixedHeight(self._s(9))
+        self._root_layout.addWidget(self._gap2)
         self._sep2 = QWidget()
         self._sep2.setFixedHeight(1)
         self._sep2.setStyleSheet("background:#13142c;")
-        root.addWidget(self._sep2)
-        root.addSpacing(4)
+        self._root_layout.addWidget(self._sep2)
+        self._gap3 = QWidget(); self._gap3.setFixedHeight(self._s(4))
+        self._root_layout.addWidget(self._gap3)
 
         self._src_lbl = QLabel("connecting...")
         self._src_lbl.setAlignment(Qt.AlignmentFlag.AlignRight)
         self._src_lbl.setStyleSheet("color:#1c1e3e; font:7pt 'Bahnschrift','Segoe UI';")
-        root.addWidget(self._src_lbl)
+        self._root_layout.addWidget(self._src_lbl)
 
         self._rebuild_sensors()
         self._apply_theme()
@@ -390,40 +401,40 @@ class Palantir(QWidget):
         for s in active_sensor_defs(self.cfg):
             color = eff_color(self.cfg, s.key)
             row_w = QWidget()
-            row_w.setFixedHeight(28)
+            row_w.setFixedHeight(self._s(28))
             rl = QHBoxLayout(row_w)
             rl.setContentsMargins(0, 0, 0, 0)
-            rl.setSpacing(9)
+            rl.setSpacing(self._s(9))
 
             dot = QLabel("\u25cf")
-            dot.setFixedWidth(10)
-            dot.setStyleSheet(f"color:{color}; font:7pt; padding:0;")
+            dot.setFixedWidth(self._s(10))
+            dot.setStyleSheet(f"color:{color}; font:{self._sp(7)}pt; padding:0;")
 
             desc = QLabel(s.label)
-            desc.setFixedWidth(68)
-            desc.setStyleSheet(f"color:{color}; font:bold 8pt 'Bahnschrift','Segoe UI';")
+            desc.setFixedWidth(self._s(68))
+            desc.setStyleSheet(f"color:{color}; font:bold {self._sp(8)}pt 'Bahnschrift','Segoe UI';")
 
             bar_bg = QWidget()
-            bar_bg.setFixedSize(76, 5)
+            bar_bg.setFixedSize(self._s(76), self._s(5))
             _t = THEMES.get(self.cfg.get("theme", "dark"), THEMES["dark"])
             bar_bg.setStyleSheet(f"background:{_t['bar_bg']}; border-radius:3px;")
 
             bar_fill = QWidget(bar_bg)
-            bar_fill.setFixedHeight(5)
+            bar_fill.setFixedHeight(self._s(5))
             bar_fill.setFixedWidth(0)
             bar_fill.setStyleSheet(f"background:{color}; border-radius:3px;")
 
             val_lbl = QLabel("---")
-            val_lbl.setFixedWidth(52)
+            val_lbl.setFixedWidth(self._s(52))
             val_lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            val_lbl.setStyleSheet(f"color:{color}; font:bold 11pt 'Bahnschrift',Consolas;")
+            val_lbl.setStyleSheet(f"color:{color}; font:bold {self._sp(11)}pt 'Bahnschrift',Consolas;")
 
             rl.addWidget(dot)
             rl.addWidget(desc)
             rl.addWidget(bar_bg)
             rl.addWidget(val_lbl)
             self._rows_layout.addWidget(row_w)
-            self._cells[s.key] = (row_w, dot, val_lbl, bar_fill, bar_bg.width(), s.unit, s.bar_max, desc)
+            self._cells[s.key] = (row_w, dot, val_lbl, bar_fill, self._s(76), s.unit, s.bar_max, desc)
 
         self._apply_visibility()
         self.adjustSize()
@@ -438,20 +449,30 @@ class Palantir(QWidget):
             return
         t = THEMES.get(self.cfg.get("theme", "dark"), THEMES["dark"])
         self._title_lbl.setStyleSheet(
-            f"color:{t['title']}; font:bold 8pt 'Bahnschrift','Segoe UI'; letter-spacing:2px;"
+            f"color:{t['title']}; font:bold {self._sp(8)}pt 'Bahnschrift','Segoe UI'; letter-spacing:2px;"
         )
-        self._src_lbl.setStyleSheet(f"color:{t['src']}; font:7pt 'Bahnschrift','Segoe UI';")
-        self._gear.setStyleSheet(f"color:{t['gear']}; font:14pt; padding:0 2px; margin-top:-2px;")
+        self._src_lbl.setStyleSheet(f"color:{t['src']}; font:{self._sp(7)}pt 'Bahnschrift','Segoe UI';")
+        self._gear.setStyleSheet(f"color:{t['gear']}; font:{self._sp(14)}pt; padding:0 2px; margin-top:-2px;")
         self._sep.setStyleSheet(f"background:{t['sep']};")
         self._sep2.setStyleSheet(f"background:{t['sep']};")
 
     def _apply_colors(self):
         for key, (row_w, dot, val_lbl, bar_fill, _, unit, mx, desc) in self._cells.items():
             c = eff_color(self.cfg, key)
-            dot.setStyleSheet(f"color:{c}; font:7pt; padding:0;")
+            dot.setStyleSheet(f"color:{c}; font:{self._sp(7)}pt; padding:0;")
             bar_fill.setStyleSheet(f"background:{c}; border-radius:2px;")
-            val_lbl.setStyleSheet(f"color:{c}; font:bold 11pt 'Bahnschrift',Consolas;")
-            desc.setStyleSheet(f"color:{c}; font:bold 8pt 'Bahnschrift','Segoe UI';")
+            val_lbl.setStyleSheet(f"color:{c}; font:bold {self._sp(11)}pt 'Bahnschrift',Consolas;")
+            desc.setStyleSheet(f"color:{c}; font:bold {self._sp(8)}pt 'Bahnschrift','Segoe UI';")
+
+    def _apply_outer_layout(self):
+        """Outer margin ve spacing'leri mevcut scale ile günceller."""
+        self._root_layout.setContentsMargins(
+            self._s(18), self._s(14), self._s(18), self._s(14)
+        )
+        self._title_row_layout.setContentsMargins(0, 0, 0, self._s(10))
+        self._gap1.setFixedHeight(self._s(9))
+        self._gap2.setFixedHeight(self._s(9))
+        self._gap3.setFixedHeight(self._s(4))
 
     # ── Settings ──────────────────────────────────────────────────────────────
     def _open_settings(self):
@@ -467,13 +488,19 @@ class Palantir(QWidget):
             self.setWindowOpacity(self.cfg["opacity"] / 100)
             self._hw_worker.set_interval(self.cfg["update_ms"])
             self._hw_worker.set_sensors(active_sensor_defs(self.cfg))
+            self._apply_outer_layout()
             self._rebuild_sensors()
             self._apply_colors()
             self._apply_theme()
             self._apply_window_flags()
             self.show()
-            _log.info("Settings applied (interval=%dms, sensors=%s)",
-                      self.cfg["update_ms"], self.cfg["active_sensors"])
+            self._rows_layout.activate()
+            self._root_layout.activate()
+            self.setMinimumSize(0, 0)
+            self.adjustSize()
+            _log.info("Settings applied (interval=%dms, scale=%d%%, sensors=%s)",
+                      self.cfg["update_ms"], self.cfg.get("scale", 100),
+                      self.cfg["active_sensors"])
 
     # ── Context menu ──────────────────────────────────────────────────────────
     def _make_menu_css(self):
