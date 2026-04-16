@@ -4,7 +4,7 @@ Also provides HardwareWorker — a QThread-based poller that emits sensor data
 on a configurable interval without blocking the UI thread.
 """
 
-import ctypes, math
+import ctypes, math, socket, time
 from logger import get_logger
 
 _log = get_logger("hw")
@@ -140,9 +140,46 @@ def get_ram_pct() -> float:
     return float(ms.dwMemoryLoad)
 
 
+# ── Network latency (TCP ping — runs in its own thread, cached) ───────────────
+import threading as _threading
+
+_ping_lock:   "_threading.Lock"  = _threading.Lock()
+_ping_cache:  float | None       = None
+_ping_thread: "_threading.Thread | None" = None
+
+
+def _ping_worker(host: str, port: int, timeout: float) -> None:
+    global _ping_cache
+    try:
+        t0 = time.perf_counter()
+        with socket.create_connection((host, port), timeout=timeout):
+            pass
+        result = round((time.perf_counter() - t0) * 1000)
+    except Exception:
+        result = None
+    with _ping_lock:
+        _ping_cache = result
+    global _ping_thread
+    _ping_thread = None
+
+
+def get_ping_ms(host: str = "1.1.1.1", port: int = 53, timeout: float = 2.0) -> float | None:
+    """Return cached round-trip latency in ms; fires a background update each call."""
+    global _ping_thread
+    with _ping_lock:
+        cached = _ping_cache
+    # Fire a new probe only when no probe is already running
+    if _ping_thread is None or not _ping_thread.is_alive():
+        t = _threading.Thread(target=_ping_worker, args=(host, port, timeout), daemon=True)
+        _ping_thread = t
+        t.start()
+    return cached
+
+
 # ── Windows API fallback dispatch ─────────────────────────────────────────────
 _WIN_FALLBACKS = {
-    "ram_usage": get_ram_pct,
+    "ram_usage":   get_ram_pct,
+    "net_latency": get_ping_ms,
 }
 
 

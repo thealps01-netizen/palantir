@@ -83,7 +83,8 @@ SENSOR_CATALOG: dict[str, "SensorDef"] = {s.key: s for s in [
     SensorDef("cpu_temp",   "CPU TEMP", "°",   "#ffa726", 110,  ("cpu temperature",)),
     SensorDef("cpu_power",  "CPU PWR",  "W",   "#ffe57f", 350,  ("cpu power", "package power", "cpu package power", "cpu pkg power", "processor power")),
     SensorDef("cpu_clock",  "CPU CLK",  "MHz", "#c8e6c9", 7000, ("cpu clock", "cpu core clock", "core #1 clock", "cpu frequency")),
-    SensorDef("ram_usage",  "RAM USE",  "%",   "#9b59f5", 100,  ()),  # Windows API
+    SensorDef("ram_usage",    "RAM USE",  "%",  "#9b59f5", 100,  ()),  # Windows API
+    SensorDef("net_latency",  "PING",     "ms", "#26c6da", 200,  ()),  # Windows API
 ]}
 
 _DEFAULT_ACTIVE = ["fps", "gpu_usage", "gpu_temp", "cpu_usage", "cpu_temp", "ram_usage"]
