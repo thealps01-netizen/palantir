@@ -501,6 +501,112 @@ class DownloadProgressDialog(_DraggableDialog):
         QApplication.processEvents()
 
 
+# ── Download error dialog ─────────────────────────────────────────────────────
+
+def _friendly_error(raw: str) -> tuple[str, str]:
+    """Return (title, body) user-friendly message from a raw exception string."""
+    r = raw.lower()
+    if "getaddrinfo" in r or "name or service not known" in r or "nodename nor servname" in r:
+        return (
+            "No Internet Connection",
+            "Could not reach the update server.\n"
+            "Please check your internet connection and try again.",
+        )
+    if "timed out" in r or "timeout" in r:
+        return (
+            "Connection Timed Out",
+            "The update server took too long to respond.\n"
+            "Please try again in a moment.",
+        )
+    if "connection refused" in r:
+        return (
+            "Connection Refused",
+            "The update server refused the connection.\n"
+            "Please try again later.",
+        )
+    if "ssl" in r or "certificate" in r:
+        return (
+            "Secure Connection Failed",
+            "Could not establish a secure connection to the server.\n"
+            "Please check your system date/time and try again.",
+        )
+    return (
+        "Download Failed",
+        "An error occurred while downloading the update.\n"
+        "Please try again later.",
+    )
+
+
+class _ErrorDialog(_DraggableDialog):
+    """Styled error dialog matching the Palantir dark theme."""
+
+    def __init__(self, title: str, body: str, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Palantir — Update Error")
+        self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setFixedWidth(380)
+        self.setStyleSheet(_STYLE)
+
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+
+        container = _Panel(self)
+        inner = QVBoxLayout(container)
+        inner.setContentsMargins(24, 22, 24, 20)
+        inner.setSpacing(14)
+        root.addWidget(container)
+
+        # ── Header row ────────────────────────────────────────────────────────
+        hdr = QHBoxLayout()
+        hdr.setSpacing(10)
+        icon_lbl = QLabel("⚠")
+        icon_lbl.setStyleSheet("color:#ff5555; font-size:20px; background:transparent;")
+        title_lbl = QLabel(title)
+        title_lbl.setObjectName("title")
+        title_lbl.setWordWrap(True)
+        hdr.addWidget(icon_lbl)
+        hdr.addWidget(title_lbl, 1)
+        inner.addLayout(hdr)
+
+        sep = QFrame()
+        sep.setObjectName("separator")
+        sep.setFrameShape(QFrame.Shape.HLine)
+        inner.addWidget(sep)
+
+        # ── Body text ─────────────────────────────────────────────────────────
+        body_lbl = QLabel(body)
+        body_lbl.setObjectName("subtitle")
+        body_lbl.setWordWrap(True)
+        body_lbl.setStyleSheet("color:#aaaacc; font-size:12px;")
+        inner.addWidget(body_lbl)
+
+        # ── OK button ─────────────────────────────────────────────────────────
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        btn_ok = QPushButton("  OK  ")
+        btn_ok.setObjectName("btn_later")
+        btn_ok.setDefault(True)
+        btn_ok.clicked.connect(self.accept)
+        btn_row.addWidget(btn_ok)
+        inner.addLayout(btn_row)
+
+    def keyPressEvent(self, e):
+        if e.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Escape):
+            self.accept()
+        else:
+            super().keyPressEvent(e)
+
+
+def _show_download_error(raw: str, parent=None) -> None:
+    title, body = _friendly_error(raw)
+    _log.warning("Download error shown to user: %s | raw: %s", title, raw)
+    dlg = _ErrorDialog(title, body, parent)
+    dlg.adjustSize()
+    dlg._center_on_screen()
+    dlg.exec()
+
+
 # ── High-level helper called from main UI ──────────────────────────────────────
 
 def prompt_and_install(tag: str, download_url: str, notes: str = "", parent=None) -> None:
@@ -586,9 +692,7 @@ def prompt_and_install(tag: str, download_url: str, notes: str = "", parent=None
     def _on_error(msg_text: str):
         _active.clear()
         prog.close()
-        from PyQt6.QtWidgets import QMessageBox
-        QMessageBox.critical(parent, "Download Error",
-                             f"Failed to download update:\n{msg_text}")
+        _show_download_error(msg_text, parent)
 
     downloader.progress.connect(_on_progress)
     downloader.finished.connect(_on_finished)
