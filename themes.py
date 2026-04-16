@@ -61,9 +61,19 @@ THEMES = {
 
 # ── Stylesheet builders ────────────────────────────────────────────────────────
 
+_WIDGET_CSS_TPL = """
+Palantir {{
+    background: {bg};
+    border: 1px solid {border};
+    border-radius: {radius};
+}}
+"""
+
+
 def make_widget_css(theme: str = "dark", layout: str = "card") -> str:
-    """Background & border are drawn by Palantir.paintEvent(); CSS is transparent."""
-    return "Palantir { background: transparent; border: none; }"
+    t = THEMES.get(theme, THEMES["dark"])
+    radius = "18px" if layout == "card" else "10px"
+    return _WIDGET_CSS_TPL.format(bg=t["bg"], border=t["border"], radius=radius)
 
 
 @functools.lru_cache(maxsize=16)

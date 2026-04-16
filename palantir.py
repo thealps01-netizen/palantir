@@ -7,10 +7,10 @@ from PyQt6.QtWidgets import (
     QPushButton, QMenu, QSystemTrayIcon,
 )
 from PyQt6.QtCore import (
-    Qt, QPoint, QRectF, QTimer, QPropertyAnimation, QEasingCurve, QThread,
+    Qt, QPoint, QTimer, QPropertyAnimation, QEasingCurve, QThread,
     QParallelAnimationGroup,
 )
-from PyQt6.QtGui  import QIcon, QPainter, QPainterPath, QPen, QColor, QFont
+from PyQt6.QtGui  import QIcon, QPainter, QPen, QColor, QFont
 
 import crash_handler
 crash_handler.install()
@@ -51,7 +51,6 @@ class Palantir(QWidget):
 
         self._apply_window_flags()
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self._apply_widget_css()
         self.setWindowOpacity(self.cfg["opacity"] / 100)
 
@@ -325,19 +324,6 @@ class Palantir(QWidget):
             ctypes.windll.user32.SetWindowLongW(hwnd, GWL_EXSTYLE, cur | WS_EX_NOACTIVATE)
         except Exception:
             pass
-
-    def paintEvent(self, event):
-        t = THEMES.get(self.cfg.get("theme", "dark"), THEMES["dark"])
-        radius = 18.0 if self.cfg.get("layout", "card") == "card" else 10.0
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        rect = QRectF(0.5, 0.5, self.width() - 1, self.height() - 1)
-        path = QPainterPath()
-        path.addRoundedRect(rect, radius, radius)
-        p.fillPath(path, QColor(t["bg"]))
-        p.setPen(QPen(QColor(t["border"]), 1.0))
-        p.drawPath(path)
-        p.end()
 
     # ── Hover animation ───────────────────────────────────────────────────────
     def enterEvent(self, e):
