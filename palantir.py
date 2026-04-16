@@ -7,10 +7,10 @@ from PyQt6.QtWidgets import (
     QPushButton, QMenu, QSystemTrayIcon,
 )
 from PyQt6.QtCore import (
-    Qt, QPoint, QTimer, QPropertyAnimation, QEasingCurve, QThread,
+    Qt, QPoint, QRectF, QTimer, QPropertyAnimation, QEasingCurve, QThread,
     QParallelAnimationGroup,
 )
-from PyQt6.QtGui  import QIcon, QPainter, QPen, QColor, QFont
+from PyQt6.QtGui  import QIcon, QPainter, QPainterPath, QPen, QColor, QFont
 
 import crash_handler
 crash_handler.install()
@@ -51,6 +51,7 @@ class Palantir(QWidget):
 
         self._apply_window_flags()
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self._apply_widget_css()
         self.setWindowOpacity(self.cfg["opacity"] / 100)
 
@@ -295,7 +296,9 @@ class Palantir(QWidget):
 
     def _apply_widget_css(self):
         if not is_high_contrast():
-            self.setStyleSheet(make_widget_css(self.cfg.get("theme", "dark")))
+            self.setStyleSheet(make_widget_css(
+                self.cfg.get("theme", "dark"), self.cfg.get("layout", "card")
+            ))
 
     def _s(self, px: int) -> int:
         """Pixel değerini mevcut scale faktörüyle ölçekler."""
@@ -323,6 +326,19 @@ class Palantir(QWidget):
         except Exception:
             pass
 
+    def paintEvent(self, event):
+        t = THEMES.get(self.cfg.get("theme", "dark"), THEMES["dark"])
+        radius = 18.0 if self.cfg.get("layout", "card") == "card" else 10.0
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        rect = QRectF(0.5, 0.5, self.width() - 1, self.height() - 1)
+        path = QPainterPath()
+        path.addRoundedRect(rect, radius, radius)
+        p.fillPath(path, QColor(t["bg"]))
+        p.setPen(QPen(QColor(t["border"]), 1.0))
+        p.drawPath(path)
+        p.end()
+
     # ── Hover animation ───────────────────────────────────────────────────────
     def enterEvent(self, e):
         super().enterEvent(e)
@@ -341,31 +357,68 @@ class Palantir(QWidget):
         self._anim.start()
 
     # ── Layout ────────────────────────────────────────────────────────────────
+    def _clear_layout(self):
+        """Widget'taki mevcut layout ve tüm çocuk widget'ları temizler."""
+        layout = self.layout()
+        if layout is None:
+            return
+        while layout.count():
+            item = layout.takeAt(0)
+            if item.widget():
+                item.widget().setParent(None)
+                item.widget().deleteLater()
+            elif item.layout():
+                self._clear_sub_layout(item.layout())
+        QWidget().setLayout(layout)
+
+    def _clear_sub_layout(self, layout):
+        while layout.count():
+            item = layout.takeAt(0)
+            if item.widget():
+                item.widget().setParent(None)
+                item.widget().deleteLater()
+            elif item.layout():
+                self._clear_sub_layout(item.layout())
+
     def _build(self):
+        self._clear_layout()
+        self._cells.clear()
+        self._prev_vals.clear()
+        # Card-only widgets — None in bar mode
+        self._title_lbl = None
+        self._src_lbl   = None
+        self._sep = self._sep2 = None
+        self._gap1 = self._gap2 = self._gap3 = None
+        self._title_row_layout = None
+        self._bar_seps = []
+
+        if self.cfg.get("layout", "card") == "bar":
+            self._build_bar()
+        else:
+            self._build_card()
+
+    def _build_card(self):
         self._root_layout = QVBoxLayout(self)
         self._root_layout.setSpacing(0)
         self._root_layout.setContentsMargins(self._s(18), self._s(14), self._s(18), self._s(14))
 
         self._title_row_layout = QHBoxLayout()
-        title_row = self._title_row_layout
-        title_row.setContentsMargins(0, 0, 0, self._s(10))
+        self._title_row_layout.setContentsMargins(0, 0, 0, self._s(10))
         self._title_lbl = QLabel("PALANTÍR")
         self._gear = QLabel("\u22ee")
         self._gear.setCursor(Qt.CursorShape.PointingHandCursor)
         self._gear.setToolTip("Settings")
-        title_row.addWidget(self._title_lbl)
-        title_row.addStretch()
-        title_row.addWidget(self._gear)
-        self._root_layout.addLayout(title_row)
+        self._title_row_layout.addWidget(self._title_lbl)
+        self._title_row_layout.addStretch()
+        self._title_row_layout.addWidget(self._gear)
+        self._root_layout.addLayout(self._title_row_layout)
 
         self._sep = QWidget()
         self._sep.setFixedHeight(1)
-        self._sep.setStyleSheet("background:#13142c;")
         self._root_layout.addWidget(self._sep)
         self._gap1 = QWidget(); self._gap1.setFixedHeight(self._s(9))
         self._root_layout.addWidget(self._gap1)
 
-        # Sensor rows container — rebuilt by _rebuild_sensors()
         self._rows_container = QWidget()
         self._rows_layout = QVBoxLayout(self._rows_container)
         self._rows_layout.setContentsMargins(0, 0, 0, 0)
@@ -376,15 +429,32 @@ class Palantir(QWidget):
         self._root_layout.addWidget(self._gap2)
         self._sep2 = QWidget()
         self._sep2.setFixedHeight(1)
-        self._sep2.setStyleSheet("background:#13142c;")
         self._root_layout.addWidget(self._sep2)
         self._gap3 = QWidget(); self._gap3.setFixedHeight(self._s(4))
         self._root_layout.addWidget(self._gap3)
 
         self._src_lbl = QLabel("connecting...")
         self._src_lbl.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self._src_lbl.setStyleSheet("color:#1c1e3e; font:7pt 'Bahnschrift','Segoe UI';")
         self._root_layout.addWidget(self._src_lbl)
+
+        self._rebuild_sensors()
+        self._apply_theme()
+
+    def _build_bar(self):
+        self._root_layout = QHBoxLayout(self)
+        self._root_layout.setSpacing(0)
+        self._root_layout.setContentsMargins(self._s(10), self._s(5), self._s(6), self._s(5))
+
+        self._rows_container = QWidget()
+        self._rows_layout = QHBoxLayout(self._rows_container)
+        self._rows_layout.setContentsMargins(0, 0, 0, 0)
+        self._rows_layout.setSpacing(0)
+        self._root_layout.addWidget(self._rows_container)
+
+        self._gear = QLabel("\u22ee")
+        self._gear.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._gear.setToolTip("Settings")
+        self._root_layout.addWidget(self._gear)
 
         self._rebuild_sensors()
         self._apply_theme()
@@ -397,44 +467,79 @@ class Palantir(QWidget):
                 item.widget().deleteLater()
         self._cells.clear()
         self._prev_vals.clear()
+        self._bar_seps = []
 
-        for s in active_sensor_defs(self.cfg):
-            color = eff_color(self.cfg, s.key)
-            row_w = QWidget()
-            row_w.setFixedHeight(self._s(28))
-            rl = QHBoxLayout(row_w)
-            rl.setContentsMargins(0, 0, 0, 0)
-            rl.setSpacing(self._s(9))
+        is_bar = self.cfg.get("layout", "card") == "bar"
+        sensors = active_sensor_defs(self.cfg)
 
-            dot = QLabel("\u25cf")
-            dot.setFixedWidth(self._s(10))
-            dot.setStyleSheet(f"color:{color}; font:{self._sp(7)}pt; padding:0;")
+        if is_bar:
+            for i, s in enumerate(sensors):
+                color = eff_color(self.cfg, s.key)
+                if i > 0:
+                    sep = QWidget()
+                    sep.setFixedSize(self._s(1), self._s(16))
+                    _t = THEMES.get(self.cfg.get("theme", "dark"), THEMES["dark"])
+                    sep.setStyleSheet(f"background:{_t['sep']};")
+                    self._rows_layout.addWidget(sep)
+                    self._bar_seps.append(sep)
 
-            desc = QLabel(s.label)
-            desc.setFixedWidth(self._s(68))
-            desc.setStyleSheet(f"color:{color}; font:bold {self._sp(8)}pt 'Bahnschrift','Segoe UI';")
+                cell_w = QWidget()
+                cl = QHBoxLayout(cell_w)
+                cl.setContentsMargins(self._s(8), 0, self._s(8), 0)
+                cl.setSpacing(self._s(4))
 
-            bar_bg = QWidget()
-            bar_bg.setFixedSize(self._s(76), self._s(5))
-            _t = THEMES.get(self.cfg.get("theme", "dark"), THEMES["dark"])
-            bar_bg.setStyleSheet(f"background:{_t['bar_bg']}; border-radius:3px;")
+                desc_lbl = QLabel(s.label)
+                desc_lbl.setStyleSheet(
+                    f"color:{color}; font:bold {self._sp(7)}pt 'Bahnschrift','Segoe UI';")
 
-            bar_fill = QWidget(bar_bg)
-            bar_fill.setFixedHeight(self._s(5))
-            bar_fill.setFixedWidth(0)
-            bar_fill.setStyleSheet(f"background:{color}; border-radius:3px;")
+                val_lbl = QLabel("---")
+                val_lbl.setFixedWidth(self._s(40))
+                val_lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+                val_lbl.setStyleSheet(
+                    f"color:{color}; font:bold {self._sp(9)}pt 'Bahnschrift',Consolas;")
 
-            val_lbl = QLabel("---")
-            val_lbl.setFixedWidth(self._s(52))
-            val_lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            val_lbl.setStyleSheet(f"color:{color}; font:bold {self._sp(11)}pt 'Bahnschrift',Consolas;")
+                cl.addWidget(desc_lbl)
+                cl.addWidget(val_lbl)
+                self._rows_layout.addWidget(cell_w)
+                self._cells[s.key] = (cell_w, None, val_lbl, None, 0, s.unit, s.bar_max, desc_lbl)
+        else:
+            for s in sensors:
+                color = eff_color(self.cfg, s.key)
+                row_w = QWidget()
+                row_w.setFixedHeight(self._s(28))
+                rl = QHBoxLayout(row_w)
+                rl.setContentsMargins(0, 0, 0, 0)
+                rl.setSpacing(self._s(9))
 
-            rl.addWidget(dot)
-            rl.addWidget(desc)
-            rl.addWidget(bar_bg)
-            rl.addWidget(val_lbl)
-            self._rows_layout.addWidget(row_w)
-            self._cells[s.key] = (row_w, dot, val_lbl, bar_fill, self._s(76), s.unit, s.bar_max, desc)
+                dot = QLabel("\u25cf")
+                dot.setFixedWidth(self._s(10))
+                dot.setStyleSheet(f"color:{color}; font:{self._sp(7)}pt; padding:0;")
+
+                desc = QLabel(s.label)
+                desc.setFixedWidth(self._s(68))
+                desc.setStyleSheet(f"color:{color}; font:bold {self._sp(8)}pt 'Bahnschrift','Segoe UI';")
+
+                bar_bg = QWidget()
+                bar_bg.setFixedSize(self._s(76), self._s(5))
+                _t = THEMES.get(self.cfg.get("theme", "dark"), THEMES["dark"])
+                bar_bg.setStyleSheet(f"background:{_t['bar_bg']}; border-radius:3px;")
+
+                bar_fill = QWidget(bar_bg)
+                bar_fill.setFixedHeight(self._s(5))
+                bar_fill.setFixedWidth(0)
+                bar_fill.setStyleSheet(f"background:{color}; border-radius:3px;")
+
+                val_lbl = QLabel("---")
+                val_lbl.setFixedWidth(self._s(52))
+                val_lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+                val_lbl.setStyleSheet(f"color:{color}; font:bold {self._sp(11)}pt 'Bahnschrift',Consolas;")
+
+                rl.addWidget(dot)
+                rl.addWidget(desc)
+                rl.addWidget(bar_bg)
+                rl.addWidget(val_lbl)
+                self._rows_layout.addWidget(row_w)
+                self._cells[s.key] = (row_w, dot, val_lbl, bar_fill, self._s(76), s.unit, s.bar_max, desc)
 
         self._apply_visibility()
         self.adjustSize()
@@ -448,34 +553,61 @@ class Palantir(QWidget):
         if is_high_contrast():
             return
         t = THEMES.get(self.cfg.get("theme", "dark"), THEMES["dark"])
-        self._title_lbl.setStyleSheet(
-            f"color:{t['title']}; font:bold {self._sp(8)}pt 'Bahnschrift','Segoe UI'; letter-spacing:2px;"
-        )
-        self._src_lbl.setStyleSheet(f"color:{t['src']}; font:{self._sp(7)}pt 'Bahnschrift','Segoe UI';")
-        self._gear.setStyleSheet(f"color:{t['gear']}; font:{self._sp(14)}pt; padding:0 2px; margin-top:-2px;")
-        self._sep.setStyleSheet(f"background:{t['sep']};")
-        self._sep2.setStyleSheet(f"background:{t['sep']};")
+        is_bar = self.cfg.get("layout", "card") == "bar"
+        if self._title_lbl:
+            self._title_lbl.setStyleSheet(
+                f"color:{t['title']}; font:bold {self._sp(8)}pt 'Bahnschrift','Segoe UI'; letter-spacing:2px;"
+            )
+        if self._src_lbl:
+            self._src_lbl.setStyleSheet(f"color:{t['src']}; font:{self._sp(7)}pt 'Bahnschrift','Segoe UI';")
+        if is_bar:
+            self._gear.setStyleSheet(
+                f"color:{t['gear']}; font:{self._sp(12)}pt; padding:0 {self._s(4)}px;")
+        else:
+            self._gear.setStyleSheet(
+                f"color:{t['gear']}; font:{self._sp(14)}pt; padding:0 2px; margin-top:-2px;")
+        if self._sep:
+            self._sep.setStyleSheet(f"background:{t['sep']};")
+        if self._sep2:
+            self._sep2.setStyleSheet(f"background:{t['sep']};")
+        for sep in self._bar_seps:
+            sep.setStyleSheet(f"background:{t['sep']};")
 
     def _apply_colors(self):
+        is_bar = self.cfg.get("layout", "card") == "bar"
         for key, (row_w, dot, val_lbl, bar_fill, _, unit, mx, desc) in self._cells.items():
             c = eff_color(self.cfg, key)
-            dot.setStyleSheet(f"color:{c}; font:{self._sp(7)}pt; padding:0;")
-            bar_fill.setStyleSheet(f"background:{c}; border-radius:2px;")
-            val_lbl.setStyleSheet(f"color:{c}; font:bold {self._sp(11)}pt 'Bahnschrift',Consolas;")
-            desc.setStyleSheet(f"color:{c}; font:bold {self._sp(8)}pt 'Bahnschrift','Segoe UI';")
+            if dot:
+                dot.setStyleSheet(f"color:{c}; font:{self._sp(7)}pt; padding:0;")
+            if bar_fill:
+                bar_fill.setStyleSheet(f"background:{c}; border-radius:2px;")
+            if is_bar:
+                val_lbl.setStyleSheet(f"color:{c}; font:bold {self._sp(9)}pt 'Bahnschrift',Consolas;")
+                desc.setStyleSheet(f"color:{c}; font:bold {self._sp(7)}pt 'Bahnschrift','Segoe UI';")
+            else:
+                val_lbl.setStyleSheet(f"color:{c}; font:bold {self._sp(11)}pt 'Bahnschrift',Consolas;")
+                desc.setStyleSheet(f"color:{c}; font:bold {self._sp(8)}pt 'Bahnschrift','Segoe UI';")
 
     def _apply_outer_layout(self):
         """Outer margin ve spacing'leri mevcut scale ile günceller."""
-        self._root_layout.setContentsMargins(
-            self._s(18), self._s(14), self._s(18), self._s(14)
-        )
-        self._title_row_layout.setContentsMargins(0, 0, 0, self._s(10))
-        self._gap1.setFixedHeight(self._s(9))
-        self._gap2.setFixedHeight(self._s(9))
-        self._gap3.setFixedHeight(self._s(4))
+        if self.cfg.get("layout", "card") == "bar":
+            self._root_layout.setContentsMargins(
+                self._s(10), self._s(5), self._s(6), self._s(5))
+        else:
+            self._root_layout.setContentsMargins(
+                self._s(18), self._s(14), self._s(18), self._s(14))
+            if self._title_row_layout:
+                self._title_row_layout.setContentsMargins(0, 0, 0, self._s(10))
+            if self._gap1:
+                self._gap1.setFixedHeight(self._s(9))
+            if self._gap2:
+                self._gap2.setFixedHeight(self._s(9))
+            if self._gap3:
+                self._gap3.setFixedHeight(self._s(4))
 
     # ── Settings ──────────────────────────────────────────────────────────────
     def _open_settings(self):
+        old_layout = self.cfg.get("layout", "card")
         dlg = SettingsDialog(self.cfg, self)
         dlg.adjustSize()
         screen = QApplication.primaryScreen().availableGeometry()
@@ -484,23 +616,27 @@ class Palantir(QWidget):
             screen.y() + (screen.height() - dlg.height()) // 2,
         )
         if dlg.exec():
+            layout_changed = old_layout != self.cfg.get("layout", "card")
             self._apply_widget_css()
             self.setWindowOpacity(self.cfg["opacity"] / 100)
             self._hw_worker.set_interval(self.cfg["update_ms"])
             self._hw_worker.set_sensors(active_sensor_defs(self.cfg))
-            self._apply_outer_layout()
-            self._rebuild_sensors()
-            self._apply_colors()
-            self._apply_theme()
+            if layout_changed:
+                self._build()
+            else:
+                self._apply_outer_layout()
+                self._rebuild_sensors()
+                self._apply_colors()
+                self._apply_theme()
             self._apply_window_flags()
             self.show()
             self._rows_layout.activate()
             self._root_layout.activate()
             self.setMinimumSize(0, 0)
             self.adjustSize()
-            _log.info("Settings applied (interval=%dms, scale=%d%%, sensors=%s)",
+            _log.info("Settings applied (interval=%dms, scale=%d%%, layout=%s, sensors=%s)",
                       self.cfg["update_ms"], self.cfg.get("scale", 100),
-                      self.cfg["active_sensors"])
+                      self.cfg.get("layout", "card"), self.cfg["active_sensors"])
 
     # ── Context menu ──────────────────────────────────────────────────────────
     def _make_menu_css(self):
@@ -568,7 +704,8 @@ class Palantir(QWidget):
     def _on_data(self, data: dict, maxes: dict, src: str):
         try:
             if src != self._last_src:
-                self._src_lbl.setText(src)
+                if self._src_lbl:
+                    self._src_lbl.setText(src)
                 self._last_src = src
             for key, (row_w, dot, val_lbl, bar_fill, bar_w, unit, bar_max, desc) in self._cells.items():
                 v = data.get(key)
@@ -582,10 +719,11 @@ class Palantir(QWidget):
                     else:
                         text = f"{v:.0f}{unit}"
                     dyn_max = maxes.get(key) or bar_max
-                    w = max(int(bar_w * min(v / dyn_max, 1.0)), 0)
+                    w = max(int(bar_w * min(v / dyn_max, 1.0)), 0) if bar_w else 0
                 if self._prev_vals.get(key) != (text, w):
                     val_lbl.setText(text)
-                    bar_fill.setFixedWidth(w)
+                    if bar_fill:
+                        bar_fill.setFixedWidth(w)
                     self._prev_vals[key] = (text, w)
         except Exception as e:
             _log.error("UI update error: %s", e)

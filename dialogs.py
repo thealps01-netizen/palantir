@@ -212,6 +212,8 @@ class SettingsDialog(QDialog):
         self.picked_colors     = {}
         self._saved_colors     = dict(cfg["colors"])
         self._saved_theme      = cfg.get("theme", "dark")
+        self._saved_layout     = cfg.get("layout", "card")
+        self._saved_visible    = dict(cfg.get("visible", {}))
         self._active_keys: list[str] = list(cfg.get("active_sensors",
             DEFAULT_CFG["active_sensors"]))
         self._active_rows: list[dict] = []
@@ -231,6 +233,10 @@ class SettingsDialog(QDialog):
         self._build()
         self._update_dialog_css()
         self.adjustSize()
+
+    def reject(self):
+        self.cfg["visible"] = self._saved_visible
+        super().reject()
 
     def keyPressEvent(self, e):
         if e.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
@@ -356,6 +362,17 @@ class SettingsDialog(QDialog):
         row_theme.addWidget(self.cmb_theme)
         layout.addLayout(row_theme)
 
+        row_layout = QHBoxLayout()
+        row_layout.addWidget(QLabel("Layout"))
+        row_layout.addStretch()
+        self.cmb_layout = QComboBox()
+        self.cmb_layout.addItem("Card",  "card")
+        self.cmb_layout.addItem("Bar",   "bar")
+        idx_lay = self.cmb_layout.findData(self.cfg.get("layout", "card"))
+        self.cmb_layout.setCurrentIndex(max(0, idx_lay))
+        row_layout.addWidget(self.cmb_layout)
+        layout.addLayout(row_layout)
+
         self.chk_top = QCheckBox("  Always on Top")
         self.chk_top.setChecked(self.cfg.get("always_on_top", True))
         self.chk_top.setAccessibleName("Always on top")
@@ -462,8 +479,9 @@ class SettingsDialog(QDialog):
         QWidget.setTabOrder(self.sld_op,    self.sld_hv)
         QWidget.setTabOrder(self.sld_hv,    self.sld_sc)
         QWidget.setTabOrder(self.sld_sc,    self.cmb)
-        QWidget.setTabOrder(self.cmb,       self.cmb_theme)
-        QWidget.setTabOrder(self.cmb_theme, self.chk_top)
+        QWidget.setTabOrder(self.cmb,        self.cmb_theme)
+        QWidget.setTabOrder(self.cmb_theme,  self.cmb_layout)
+        QWidget.setTabOrder(self.cmb_layout, self.chk_top)
         QWidget.setTabOrder(self.chk_top,   self.chk_startup)
         QWidget.setTabOrder(self.chk_startup, self._add_combo)
         QWidget.setTabOrder(self._add_combo,  btn_cancel)
@@ -579,6 +597,8 @@ class SettingsDialog(QDialog):
         self.picked_colors = {}
         idx = self.cmb_theme.findData(self._saved_theme)
         self.cmb_theme.setCurrentIndex(max(0, idx))
+        idx_lay = self.cmb_layout.findData(self._saved_layout)
+        self.cmb_layout.setCurrentIndex(max(0, idx_lay))
         for row in self._active_rows:
             key = row["key"]
             s   = SENSOR_CATALOG.get(key)
@@ -601,6 +621,7 @@ class SettingsDialog(QDialog):
         self.cfg["always_on_top"] = self.chk_top.isChecked()
         set_startup(self.chk_startup.isChecked())
         self.cfg["theme"] = self.cmb_theme.currentData()
+        self.cfg["layout"] = self.cmb_layout.currentData()
         self.cfg["active_sensors"] = list(self._active_keys)
         self.cfg["visible"] = {key: True for key in self._active_keys}
         for key, hex_c in self.picked_colors.items():

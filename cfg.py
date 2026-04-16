@@ -98,6 +98,7 @@ DEFAULT_CFG = {
     "pos_y":           -1,
     "theme":           "dark",
     "scale":           100,
+    "layout":          "card",
     "active_sensors":  list(_DEFAULT_ACTIVE),
     "visible":         {k: True for k in _DEFAULT_ACTIVE},
     "colors":          {},
@@ -142,6 +143,7 @@ def _sanitize_cfg(cfg: dict) -> dict:
         cfg["pos_x"] = DEFAULT_CFG["pos_x"]
         cfg["pos_y"] = DEFAULT_CFG["pos_y"]
     cfg["theme"] = cfg.get("theme", "dark") if cfg.get("theme") in ("dark", "light") else "dark"
+    cfg["layout"] = cfg.get("layout", "card") if cfg.get("layout") in ("card", "bar") else "card"
     cfg["colors"] = {
         k: v for k, v in cfg.get("colors", {}).items()
         if k in SENSOR_CATALOG and isinstance(v, str) and _HEX_RE.match(v)
@@ -158,7 +160,7 @@ def load_cfg():
         # Scalar fields
         for k in ("opacity", "hover_opacity", "update_ms", "locked",
                   "always_on_top", "pos_x", "pos_y", "theme", "scale",
-                  "skipped_version"):
+                  "layout", "skipped_version"):
             if k in saved:
                 cfg[k] = saved[k]
         cfg["colors"] = saved.get("colors", {})
