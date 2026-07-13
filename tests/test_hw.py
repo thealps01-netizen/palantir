@@ -49,6 +49,18 @@ def test_pick_sensor_empty_raw():
     assert mx  is None
 
 
+def test_pick_sensor_exact_match_beats_substring():
+    """'framerate' must pick the exact 'framerate' entry, not 'framerate 1% low'
+    — even when the 1%-low entry comes first in the dict."""
+    raw = {
+        "framerate 1% low": (48.0, 60.0),
+        "framerate":        (120.0, 144.0),
+    }
+    val, mx = hw._pick_sensor(raw, ("framerate", "frame rate"))
+    assert val == pytest.approx(120.0)
+    assert mx  == pytest.approx(144.0)
+
+
 # ── get_data fallback for Windows-API sensors ─────────────────────────────────
 
 def test_get_data_ram_fallback(monkeypatch):
@@ -74,6 +86,7 @@ def test_get_data_mahm_sensor_missing_returns_none(monkeypatch):
     """When MAHM is running but doesn't have a sensor, return None."""
 
     monkeypatch.setattr(hw, "read_mahm", lambda: _RAW_OTHER)
+    monkeypatch.setattr(hw, "read_rtss_fps", lambda: None)
 
     cfg = dict(DEFAULT_CFG)
     cfg["active_sensors"] = ["fps"]
@@ -89,6 +102,7 @@ def test_get_data_mahm_sensor_missing_returns_none(monkeypatch):
 
 def test_get_data_source_label_when_mahm_unavailable(monkeypatch):
     monkeypatch.setattr(hw, "read_mahm", lambda: {})
+    monkeypatch.setattr(hw, "read_rtss_fps", lambda: None)
 
     cfg = dict(DEFAULT_CFG)
     cfg["active_sensors"] = ["fps"]
@@ -97,6 +111,57 @@ def test_get_data_source_label_when_mahm_unavailable(monkeypatch):
 
     _, _mx, src = hw.get_data(sensors)
     assert src == "N/A"
+
+
+# ── RTSS direct-read FPS fallback ─────────────────────────────────────────────
+
+def test_get_data_fps_falls_back_to_rtss(monkeypatch):
+    """MAHM has no framerate entry → FPS comes from RTSS shared memory."""
+    monkeypatch.setattr(hw, "read_mahm", lambda: _RAW_OTHER)
+    monkeypatch.setattr(hw, "read_rtss_fps", lambda: 237.4)
+
+    cfg = dict(DEFAULT_CFG)
+    cfg["active_sensors"] = ["fps"]
+    cfg["visible"]        = {"fps": True}
+    sensors = active_sensor_defs(cfg)
+
+    data, _mx, src = hw.get_data(sensors)
+    assert data["fps"] == pytest.approx(237.4)
+    assert src == "MSI Afterburner"   # MAHM still connected for other sensors
+
+
+def test_get_data_fps_rtss_only_source_label(monkeypatch):
+    """MAHM completely absent but RTSS hooked → src label is 'RTSS'."""
+    monkeypatch.setattr(hw, "read_mahm", lambda: {})
+    monkeypatch.setattr(hw, "read_rtss_fps", lambda: 144.0)
+
+    cfg = dict(DEFAULT_CFG)
+    cfg["active_sensors"] = ["fps"]
+    cfg["visible"]        = {"fps": True}
+    sensors = active_sensor_defs(cfg)
+
+    data, _mx, src = hw.get_data(sensors)
+    assert data["fps"] == pytest.approx(144.0)
+    assert src == "RTSS"
+
+
+def test_get_data_fps_zero_mahm_uses_rtss(monkeypatch):
+    """MAHM reports framerate 0 (not hooked) → RTSS value wins."""
+    monkeypatch.setattr(hw, "read_mahm", lambda: {"framerate": (0.0, 0.0)})
+    monkeypatch.setattr(hw, "read_rtss_fps", lambda: 99.0)
+
+    cfg = dict(DEFAULT_CFG)
+    cfg["active_sensors"] = ["fps"]
+    cfg["visible"]        = {"fps": True}
+    sensors = active_sensor_defs(cfg)
+
+    data, _mx, _src = hw.get_data(sensors)
+    assert data["fps"] == pytest.approx(99.0)
+
+
+def test_read_rtss_fps_no_rtss_running():
+    """Without RTSS running, read_rtss_fps must return None (never raise)."""
+    assert hw.read_rtss_fps() is None or isinstance(hw.read_rtss_fps(), float)
 
 
 def test_get_data_source_label_when_mahm_available(monkeypatch):

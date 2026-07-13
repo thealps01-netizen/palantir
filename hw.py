@@ -46,11 +46,9 @@ class _Entry(ctypes.LittleEndianStructure):
     ]
 
 
-# ── Pre-computed sizes, reusable buffers, kernel32 setup (once at import) ─────
+# ── Pre-computed sizes, kernel32 setup (once at import) ───────────────────────
 _HDR_SIZE   = ctypes.sizeof(_Hdr)
 _ENTRY_SIZE = ctypes.sizeof(_Entry)
-_hdr_buf    = (ctypes.c_byte * _HDR_SIZE)()
-_entry_buf  = (ctypes.c_byte * _ENTRY_SIZE)()
 
 _mahm_sensor_count: int = 0   # tracks last reported count to avoid log spam
 
@@ -70,6 +68,10 @@ def read_mahm() -> dict:
         _k32.CloseHandle(hm)
         return {}
     try:
+        # Local buffers — read_mahm() is called from both the worker thread and
+        # the UI thread (Settings dialog); shared module-level buffers would race.
+        _hdr_buf   = (ctypes.c_byte * _HDR_SIZE)()
+        _entry_buf = (ctypes.c_byte * _ENTRY_SIZE)()
         ctypes.memmove(_hdr_buf, pv, _HDR_SIZE)
         hdr = _Hdr.from_buffer(_hdr_buf)
         if hdr.sig != MAHM_SIG:
@@ -116,6 +118,91 @@ def list_mahm_sensors() -> dict[str, float]:
     Returns empty dict if Afterburner is not running.
     """
     return {k: v for k, (v, _mx) in read_mahm().items()}
+
+
+# ── RTSS shared memory (direct FPS fallback) ──────────────────────────────────
+# Afterburner's "Framerate" sensor is fed by RTSS. Some games (e.g. CS2) or
+# configurations don't surface it through MAHM, so we also read RTSS's own
+# shared memory ("RTSSSharedMemoryV2") directly as a fallback.
+RTSS_SIG = 0x52545353   # 'RTSS'
+
+
+class _RtssHdr(ctypes.LittleEndianStructure):
+    _pack_ = 1
+    _fields_ = [
+        ("dwSignature",    ctypes.c_uint32),
+        ("dwVersion",      ctypes.c_uint32),
+        ("dwAppEntrySize", ctypes.c_uint32),
+        ("dwAppArrOffset", ctypes.c_uint32),
+        ("dwAppArrSize",   ctypes.c_uint32),
+        ("dwOSDEntrySize", ctypes.c_uint32),
+        ("dwOSDArrOffset", ctypes.c_uint32),
+        ("dwOSDArrSize",   ctypes.c_uint32),
+        ("dwOSDFrame",     ctypes.c_uint32),
+    ]
+
+
+class _RtssAppEntry(ctypes.LittleEndianStructure):
+    _pack_ = 1
+    _fields_ = [
+        ("dwProcessID", ctypes.c_uint32),
+        ("szName",      ctypes.c_char * MAX_PATH),
+        ("dwFlags",     ctypes.c_uint32),
+        ("dwTime0",     ctypes.c_uint32),
+        ("dwTime1",     ctypes.c_uint32),
+        ("dwFrames",    ctypes.c_uint32),
+        ("dwFrameTime", ctypes.c_uint32),
+    ]
+
+
+_RTSS_HDR_SIZE = ctypes.sizeof(_RtssHdr)
+_RTSS_APP_SIZE = ctypes.sizeof(_RtssAppEntry)
+
+
+def read_rtss_fps() -> float | None:
+    """Read current framerate directly from RTSS shared memory.
+
+    Returns FPS of the most recently updated hooked 3D app, or None when
+    RTSS is not running / no app is hooked.
+    """
+    hm = _k32.OpenFileMappingW(FILE_MAP_READ, False, "RTSSSharedMemoryV2")
+    if not hm:
+        return None
+    pv = _k32.MapViewOfFile(hm, FILE_MAP_READ, 0, 0, 0)
+    if not pv:
+        _k32.CloseHandle(hm)
+        return None
+    try:
+        hdr_buf = (ctypes.c_byte * _RTSS_HDR_SIZE)()
+        ctypes.memmove(hdr_buf, pv, _RTSS_HDR_SIZE)
+        hdr = _RtssHdr.from_buffer(hdr_buf)
+        if hdr.dwSignature != RTSS_SIG or hdr.dwVersion < 0x00020000:
+            return None
+        n_apps     = hdr.dwAppArrSize
+        entry_size = hdr.dwAppEntrySize
+        if n_apps > 256 or entry_size < _RTSS_APP_SIZE or entry_size > 8192:
+            return None
+        best_fps:  float | None = None
+        best_time: int          = 0
+        ebuf = (ctypes.c_byte * _RTSS_APP_SIZE)()
+        for i in range(n_apps):
+            ctypes.memmove(ebuf, pv + hdr.dwAppArrOffset + i * entry_size, _RTSS_APP_SIZE)
+            e = _RtssAppEntry.from_buffer(ebuf)
+            if not e.dwProcessID:
+                continue
+            dt = e.dwTime1 - e.dwTime0
+            if dt > 0 and e.dwFrames > 0:
+                fps = e.dwFrames * 1000.0 / dt
+                if e.dwTime1 >= best_time and 0 < fps < 2000:
+                    best_time = e.dwTime1
+                    best_fps  = fps
+        return best_fps
+    except Exception as e:
+        _log.debug("RTSS read error: %s", e)
+        return None
+    finally:
+        _k32.UnmapViewOfFile(pv)
+        _k32.CloseHandle(hm)
 
 
 # ── Windows RAM (GlobalMemoryStatusEx) ────────────────────────────────────────
@@ -185,11 +272,19 @@ _WIN_FALLBACKS = {
 
 # ── Sensor pick helpers ───────────────────────────────────────────────────────
 def _pick_sensor(raw: dict, candidates: tuple) -> tuple[float | None, float | None]:
-    """Return (current_val, session_max) for the first matching candidate."""
+    """Return (current_val, session_max) for the first matching candidate.
+
+    Exact name match wins over substring match, so e.g. the "framerate"
+    candidate picks "framerate" and not "framerate 1% low".
+    """
+    for c in candidates:
+        tup = raw.get(c)
+        if tup is not None:
+            return tup   # (val, max_val)
     for c in candidates:
         for k, tup in raw.items():
             if c in k:
-                return tup   # (val, max_val)
+                return tup
     return (None, None)
 
 
@@ -202,9 +297,18 @@ def get_data(sensors: list) -> tuple[dict, dict, str]:
     raw = read_mahm()
     vals: dict  = {}
     maxes: dict = {}
+    rtss_used = False
     for s in sensors:
         if s.mahm_names:
             v, mx = _pick_sensor(raw, s.mahm_names)
+            # FPS fallback: read RTSS shared memory directly when MAHM has no
+            # (or zero) framerate — e.g. sensor unchecked in Afterburner, or
+            # games where MAHM doesn't surface it while RTSS is still hooked.
+            if s.key == "fps" and not v:
+                rtss_v = read_rtss_fps()
+                if rtss_v is not None:
+                    v, mx = rtss_v, None
+                    rtss_used = True
             vals[s.key]  = v
             maxes[s.key] = mx
         else:
@@ -217,7 +321,13 @@ def get_data(sensors: list) -> tuple[dict, dict, str]:
             else:
                 vals[s.key] = None
             maxes[s.key] = s.bar_max   # Windows API sensors use fixed bar_max
-    return vals, maxes, ("MSI Afterburner" if raw else "N/A")
+    if raw:
+        src = "MSI Afterburner"
+    elif rtss_used:
+        src = "RTSS"
+    else:
+        src = "N/A"
+    return vals, maxes, src
 
 
 # ── QThread-based async hardware worker ───────────────────────────────────────
@@ -263,7 +373,13 @@ try:
                     self.data_ready.emit(vals, maxes, src)
                 except Exception as e:
                     _log.error("HardwareWorker poll error: %s", e)
-                QThread.msleep(self._interval_ms)
+                # Sleep in short chunks so stop() takes effect quickly even
+                # with a 5s interval (thread.wait(2000) would time out otherwise).
+                slept = 0
+                while self._running and slept < self._interval_ms:
+                    step = min(100, self._interval_ms - slept)
+                    QThread.msleep(step)
+                    slept += step
             _log.debug("HardwareWorker stopped.")
 
         def stop(self) -> None:

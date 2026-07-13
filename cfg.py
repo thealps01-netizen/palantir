@@ -89,6 +89,9 @@ SENSOR_CATALOG: dict[str, "SensorDef"] = {s.key: s for s in [
 
 _DEFAULT_ACTIVE = ["fps", "gpu_usage", "gpu_temp", "cpu_usage", "cpu_temp", "ram_usage"]
 
+# Screen anchor presets: "" = free (drag), others snap to screen edges
+ANCHOR_PRESETS = ("", "tl", "tc", "tr", "bl", "bc", "br")
+
 DEFAULT_CFG = {
     "opacity":         90,
     "hover_opacity":   20,
@@ -97,6 +100,7 @@ DEFAULT_CFG = {
     "always_on_top":   True,
     "pos_x":           -1,
     "pos_y":           -1,
+    "anchor":          "",
     "theme":           "dark",
     "scale":           100,
     "layout":          "card",
@@ -143,6 +147,7 @@ def _sanitize_cfg(cfg: dict) -> dict:
     except (TypeError, ValueError):
         cfg["pos_x"] = DEFAULT_CFG["pos_x"]
         cfg["pos_y"] = DEFAULT_CFG["pos_y"]
+    cfg["anchor"] = cfg.get("anchor", "") if cfg.get("anchor") in ANCHOR_PRESETS else ""
     cfg["theme"] = cfg.get("theme", "dark") if cfg.get("theme") in ("dark", "light") else "dark"
     cfg["layout"] = cfg.get("layout", "card") if cfg.get("layout") in ("card", "bar") else "card"
     cfg["colors"] = {
@@ -160,7 +165,7 @@ def load_cfg():
         cfg = dict(DEFAULT_CFG)
         # Scalar fields
         for k in ("opacity", "hover_opacity", "update_ms", "locked",
-                  "always_on_top", "pos_x", "pos_y", "theme", "scale",
+                  "always_on_top", "pos_x", "pos_y", "anchor", "theme", "scale",
                   "layout", "skipped_version"):
             if k in saved:
                 cfg[k] = saved[k]

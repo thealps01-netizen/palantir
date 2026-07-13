@@ -105,6 +105,35 @@ def test_save_and_reload_roundtrip(tmp_settings):
     assert loaded["visible"]["cpu_usage"] is False
 
 
+# ── Anchor presets ────────────────────────────────────────────────────────────
+
+def test_load_cfg_valid_anchor_kept(tmp_settings):
+    data = dict(cfg.DEFAULT_CFG)
+    data["anchor"] = "tr"
+    tmp_settings.write_text(json.dumps(data))
+
+    result = cfg.load_cfg()
+    assert result["anchor"] == "tr"
+
+
+def test_load_cfg_invalid_anchor_reset(tmp_settings):
+    data = dict(cfg.DEFAULT_CFG)
+    data["anchor"] = "bogus"
+    tmp_settings.write_text(json.dumps(data))
+
+    result = cfg.load_cfg()
+    assert result["anchor"] == ""
+
+
+def test_load_cfg_missing_anchor_defaults_empty(tmp_settings):
+    data = dict(cfg.DEFAULT_CFG)
+    del data["anchor"]
+    tmp_settings.write_text(json.dumps(data))
+
+    result = cfg.load_cfg()
+    assert result["anchor"] == ""
+
+
 # ── Color helpers ─────────────────────────────────────────────────────────────
 
 def test_default_color_known_sensor():

@@ -373,6 +373,22 @@ class SettingsDialog(QDialog):
         row_layout.addWidget(self.cmb_layout)
         layout.addLayout(row_layout)
 
+        row_pos = QHBoxLayout()
+        row_pos.addWidget(QLabel("Position"))
+        row_pos.addStretch()
+        self.cmb_pos = QComboBox()
+        self.cmb_pos.setAccessibleName("Screen position")
+        self.cmb_pos.setAccessibleDescription("Pin the overlay to a screen edge, or move it freely by dragging")
+        for txt, code in [("Free (drag)", ""),   ("Top Left", "tl"),
+                          ("Top Center", "tc"),  ("Top Right", "tr"),
+                          ("Bottom Left", "bl"), ("Bottom Center", "bc"),
+                          ("Bottom Right", "br")]:
+            self.cmb_pos.addItem(txt, code)
+        idx_pos = self.cmb_pos.findData(self.cfg.get("anchor", ""))
+        self.cmb_pos.setCurrentIndex(max(0, idx_pos))
+        row_pos.addWidget(self.cmb_pos)
+        layout.addLayout(row_pos)
+
         self.chk_top = QCheckBox("  Always on Top")
         self.chk_top.setChecked(self.cfg.get("always_on_top", True))
         self.chk_top.setAccessibleName("Always on top")
@@ -481,7 +497,8 @@ class SettingsDialog(QDialog):
         QWidget.setTabOrder(self.sld_sc,    self.cmb)
         QWidget.setTabOrder(self.cmb,        self.cmb_theme)
         QWidget.setTabOrder(self.cmb_theme,  self.cmb_layout)
-        QWidget.setTabOrder(self.cmb_layout, self.chk_top)
+        QWidget.setTabOrder(self.cmb_layout, self.cmb_pos)
+        QWidget.setTabOrder(self.cmb_pos,    self.chk_top)
         QWidget.setTabOrder(self.chk_top,   self.chk_startup)
         QWidget.setTabOrder(self.chk_startup, self._add_combo)
         QWidget.setTabOrder(self._add_combo,  btn_cancel)
@@ -622,6 +639,7 @@ class SettingsDialog(QDialog):
         set_startup(self.chk_startup.isChecked())
         self.cfg["theme"] = self.cmb_theme.currentData()
         self.cfg["layout"] = self.cmb_layout.currentData()
+        self.cfg["anchor"] = self.cmb_pos.currentData()
         self.cfg["active_sensors"] = list(self._active_keys)
         self.cfg["visible"] = {key: True for key in self._active_keys}
         for key, hex_c in self.picked_colors.items():

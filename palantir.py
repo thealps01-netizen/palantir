@@ -60,7 +60,10 @@ class Palantir(QWidget):
 
         self._build()
 
-        if self.cfg["pos_x"] >= 0:
+        if self.cfg.get("anchor"):
+            self.adjustSize()
+            self._apply_anchor()
+        elif self.cfg["pos_x"] >= 0:
             x, y = self.cfg["pos_x"], self.cfg["pos_y"]
             cx, cy = x + self.width() // 2, y + self.height() // 2
             if any(s.geometry().contains(cx, cy) for s in QApplication.screens()):
@@ -313,6 +316,45 @@ class Palantir(QWidget):
         if self.cfg.get("always_on_top", True):
             flags |= Qt.WindowType.WindowStaysOnTopHint
         self.setWindowFlags(flags)
+
+    # ── Screen anchor (pin position presets) ──────────────────────────────────
+    ANCHOR_LABELS = [
+        ("Free (drag)",   ""),
+        ("Top Left",      "tl"),
+        ("Top Center",    "tc"),
+        ("Top Right",     "tr"),
+        ("Bottom Left",   "bl"),
+        ("Bottom Center", "bc"),
+        ("Bottom Right",  "br"),
+    ]
+
+    def _apply_anchor(self, save: bool = False):
+        """Snap the widget to the configured screen-edge preset."""
+        a = self.cfg.get("anchor", "")
+        if not a:
+            return
+        scr = (QApplication.screenAt(self.pos())
+               or QApplication.primaryScreen()).availableGeometry()
+        m = 16
+        w, h = self.width(), self.height()
+        if   a[1] == "l": x = scr.left() + m
+        elif a[1] == "c": x = scr.left() + (scr.width() - w) // 2
+        else:             x = scr.left() + scr.width() - w - m
+        y = scr.top() + m if a[0] == "t" else scr.top() + scr.height() - h - m
+        self.move(x, y)
+        self._home_pos = self.pos()
+        self.cfg["pos_x"], self.cfg["pos_y"] = self.x(), self.y()
+        if save:
+            save_cfg(self.cfg)
+
+    def _set_anchor(self, preset: str):
+        self.cfg["anchor"] = preset
+        if preset:
+            self.adjustSize()
+            self._apply_anchor(save=True)
+        else:
+            save_cfg(self.cfg)
+        _log.info("Anchor set to %r", preset)
 
     def _apply_no_activate(self):
         """Set WS_EX_NOACTIVATE so the overlay never steals focus from games."""
@@ -616,10 +658,14 @@ class Palantir(QWidget):
                 self._apply_theme()
             self._apply_window_flags()
             self.show()
+            # setWindowFlags() recreates the native window — WS_EX_NOACTIVATE
+            # must be re-applied or the overlay starts stealing focus from games.
+            self._apply_no_activate()
             self._rows_layout.activate()
             self._root_layout.activate()
             self.setMinimumSize(0, 0)
             self.adjustSize()
+            self._apply_anchor()   # keep pinned position after size changes
             _log.info("Settings applied (interval=%dms, scale=%d%%, layout=%s, sensors=%s)",
                       self.cfg["update_ms"], self.cfg.get("scale", 100),
                       self.cfg.get("layout", "card"), self.cfg["active_sensors"])
@@ -638,6 +684,13 @@ class Palantir(QWidget):
         act_set  = menu.addAction("  \u2699  Settings")
         act_upd  = menu.addAction("  \u27f3  Check for Updates")
         menu.addSeparator()
+        pos_menu = menu.addMenu("  \U0001F4CC  Position")
+        pos_menu.setStyleSheet(self._make_menu_css())
+        cur_anchor = self.cfg.get("anchor", "")
+        anchor_acts = {}
+        for label, code in self.ANCHOR_LABELS:
+            mark = "\u25cf" if code == cur_anchor else "\u25cb"
+            anchor_acts[pos_menu.addAction(f"  {mark}  {label}")] = code
         if self.cfg.get("locked"):
             act_lock = menu.addAction("  \U0001F513  Unlock")
         else:
@@ -647,6 +700,8 @@ class Palantir(QWidget):
         action = menu.exec(e.globalPos())
         if   action == act_set:  self._open_settings()
         elif action == act_upd:  self._check_for_updates(manual=True)
+        elif action in anchor_acts:
+            self._set_anchor(anchor_acts[action])
         elif action == act_lock:
             self.cfg["locked"] = not self.cfg.get("locked", False)
             save_cfg(self.cfg)
@@ -682,6 +737,7 @@ class Palantir(QWidget):
         if e.button() == Qt.MouseButton.LeftButton and not self._drag_pos.isNull():
             self.cfg["pos_x"] = self.x()
             self.cfg["pos_y"] = self.y()
+            self.cfg["anchor"] = ""   # manual drag switches back to free positioning
             self._home_pos = self.pos()
             save_cfg(self.cfg)
         self._drag_pos = QPoint()
