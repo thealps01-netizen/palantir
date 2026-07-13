@@ -180,8 +180,13 @@ def read_rtss_fps() -> float | None:
             return None
         n_apps     = hdr.dwAppArrSize
         entry_size = hdr.dwAppEntrySize
-        if n_apps > 256 or entry_size < _RTSS_APP_SIZE or entry_size > 8192:
+        # RTSS 7.3.x uses 12416-byte app entries; allow generous headroom.
+        if n_apps > 256 or entry_size < _RTSS_APP_SIZE or entry_size > 65536:
             return None
+        # dwTime0/dwTime1 are in GetTickCount() milliseconds — only entries
+        # updated within the last few seconds are live (RTSS keeps stale slots
+        # around for idle apps that rendered a frame long ago).
+        now = _k32.GetTickCount()
         best_fps:  float | None = None
         best_time: int          = 0
         ebuf = (ctypes.c_byte * _RTSS_APP_SIZE)()
@@ -190,10 +195,13 @@ def read_rtss_fps() -> float | None:
             e = _RtssAppEntry.from_buffer(ebuf)
             if not e.dwProcessID:
                 continue
+            age = (now - e.dwTime1) & 0xFFFFFFFF   # tick-count wraparound safe
+            if age > 3000:
+                continue
             dt = e.dwTime1 - e.dwTime0
             if dt > 0 and e.dwFrames > 0:
                 fps = e.dwFrames * 1000.0 / dt
-                if e.dwTime1 >= best_time and 0 < fps < 2000:
+                if e.dwTime1 >= best_time and 1 < fps < 2000:
                     best_time = e.dwTime1
                     best_fps  = fps
         return best_fps
@@ -309,6 +317,11 @@ def get_data(sensors: list) -> tuple[dict, dict, str]:
                 if rtss_v is not None:
                     v, mx = rtss_v, None
                     rtss_used = True
+                else:
+                    # Last resort: Afterburner's "Frametime" sensor (ms/frame)
+                    ft = raw.get("frametime")
+                    if ft and ft[0] > 0:
+                        v, mx = 1000.0 / ft[0], None
             vals[s.key]  = v
             maxes[s.key] = mx
         else:

@@ -7,10 +7,10 @@ from PyQt6.QtWidgets import (
     QPushButton, QMenu, QSystemTrayIcon,
 )
 from PyQt6.QtCore import (
-    Qt, QPoint, QTimer, QPropertyAnimation, QEasingCurve, QThread,
+    Qt, QPoint, QRectF, QTimer, QPropertyAnimation, QEasingCurve, QThread,
     QParallelAnimationGroup,
 )
-from PyQt6.QtGui  import QIcon, QPainter, QPen, QColor, QFont
+from PyQt6.QtGui  import QIcon, QPainter, QPainterPath, QPen, QColor, QFont, QRegion
 
 import crash_handler
 crash_handler.install()
@@ -41,6 +41,7 @@ class Palantir(QWidget):
         super().__init__()
         self.cfg            = load_cfg()
         self._drag_pos      = QPoint()
+        self._press_pos     = QPoint()
         self._cells         = {}
         self._prev_vals     = {}
         self._last_src      = None
@@ -301,6 +302,26 @@ class Palantir(QWidget):
             self.setStyleSheet(make_widget_css(
                 self.cfg.get("theme", "dark"), self.cfg.get("layout", "card")
             ))
+        self._apply_corner_mask()
+
+    def _apply_corner_mask(self):
+        """Clip the window to the CSS border-radius.
+
+        QSS border-radius alone leaves the corner pixels outside the rounded
+        rect unpainted (black artifacts, visible over light backgrounds after
+        the overlay is moved). A window mask cuts them off for real.
+        """
+        if is_high_contrast():
+            self.clearMask()
+            return
+        radius = 18.0 if self.cfg.get("layout", "card") == "card" else 10.0
+        path = QPainterPath()
+        path.addRoundedRect(QRectF(self.rect()), radius, radius)
+        self.setMask(QRegion(path.toFillPolygon().toPolygon()))
+
+    def resizeEvent(self, e):
+        super().resizeEvent(e)
+        self._apply_corner_mask()
 
     def _s(self, px: int) -> int:
         """Pixel değerini mevcut scale faktörüyle ölçekler."""
@@ -724,6 +745,7 @@ class Palantir(QWidget):
                 self._drag_pos = (
                     e.globalPosition().toPoint() - self.frameGeometry().topLeft()
                 )
+                self._press_pos = self.pos()
 
     def mouseMoveEvent(self, e):
         if (
@@ -734,7 +756,11 @@ class Palantir(QWidget):
             self.move(e.globalPosition().toPoint() - self._drag_pos)
 
     def mouseReleaseEvent(self, e):
-        if e.button() == Qt.MouseButton.LeftButton and not self._drag_pos.isNull():
+        if (e.button() == Qt.MouseButton.LeftButton
+                and not self._drag_pos.isNull()
+                and self.pos() != getattr(self, "_press_pos", self.pos())):
+            # Only a real drag (position changed) saves pos and unpins the anchor;
+            # a plain click must not reset the position preset.
             self.cfg["pos_x"] = self.x()
             self.cfg["pos_y"] = self.y()
             self.cfg["anchor"] = ""   # manual drag switches back to free positioning
