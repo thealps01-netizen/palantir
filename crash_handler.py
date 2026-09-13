@@ -1,7 +1,7 @@
-"""crash_handler.py — Global unhandled exception handler for Palantir.
+"""crash_handler.py — Global unhandled exception handler for Istari.
 
 Intercepts uncaught exceptions, writes a timestamped crash log under
-%LOCALAPPDATA%/Palantir/logs/, and shows a user-friendly dialog with
+%LOCALAPPDATA%/Istari/logs/, and shows a user-friendly dialog with
 options to open the log folder or copy the traceback to clipboard.
 """
 
@@ -22,7 +22,7 @@ def _write_crash_log(exc_type, exc_value, exc_tb) -> tuple[str, str]:
     tb   = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
     try:
         with open(path, "w", encoding="utf-8") as f:
-            f.write(f"Palantir crash report — {datetime.datetime.now()}\n")
+            f.write(f"Istari crash report — {datetime.datetime.now()}\n")
             f.write("=" * 60 + "\n\n")
             f.write(tb)
     except Exception:
@@ -39,7 +39,7 @@ def _show_crash_dialog(crash_path: str, tb_text: str) -> None:
             return
 
         msg = QMessageBox()
-        msg.setWindowTitle("Palantir — Beklenmedik Hata")
+        msg.setWindowTitle("Istari — Beklenmedik Hata")
         msg.setIcon(QMessageBox.Icon.Critical)
         msg.setText(
             "Uygulama beklenmedik bir hatayla karşılaştı.\n\n"
@@ -62,7 +62,7 @@ def _show_crash_dialog(crash_path: str, tb_text: str) -> None:
 
 
 def install() -> None:
-    """Replace sys.excepthook with Palantir's crash handler."""
+    """Replace sys.excepthook with Istari's crash handler."""
 
     def _handler(exc_type, exc_value, exc_tb):
         # Let KeyboardInterrupt through normally

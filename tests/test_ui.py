@@ -1,4 +1,4 @@
-"""tests/test_ui.py — UI smoke tests for palantir.py (SettingsDialog + Palantir widget)."""
+"""tests/test_ui.py — UI smoke tests for istari.py (SettingsDialog + Istari widget)."""
 
 import os
 import sys
@@ -27,7 +27,7 @@ def default_cfg():
 
 def test_settings_dialog_opens(qapp_instance, default_cfg):
     """SettingsDialog should open without errors."""
-    from palantir import SettingsDialog
+    from istari import SettingsDialog
     dlg = SettingsDialog(default_cfg)
     assert dlg is not None
     dlg.close()
@@ -36,7 +36,7 @@ def test_settings_dialog_opens(qapp_instance, default_cfg):
 def test_settings_dialog_has_apply_button(qapp_instance, default_cfg):
     """Apply button should be present and enabled."""
     from PyQt6.QtWidgets import QPushButton
-    from palantir import SettingsDialog
+    from istari import SettingsDialog
     dlg = SettingsDialog(default_cfg)
     apply_buttons = [w for w in dlg.findChildren(QPushButton)
                      if "Apply" in w.text() or w.objectName() == "btn_ok"]
@@ -47,7 +47,7 @@ def test_settings_dialog_has_apply_button(qapp_instance, default_cfg):
 
 def test_settings_dialog_closes_on_reject(qapp_instance, default_cfg):
     """Pressing Escape / calling reject() should close the dialog."""
-    from palantir import SettingsDialog
+    from istari import SettingsDialog
     dlg = SettingsDialog(default_cfg)
     dlg.reject()
     assert not dlg.isVisible()
@@ -56,7 +56,7 @@ def test_settings_dialog_closes_on_reject(qapp_instance, default_cfg):
 def test_settings_dialog_accessible_names(qapp_instance, default_cfg):
     """All interactive widgets should have accessible names set."""
     from PyQt6.QtWidgets import QPushButton, QCheckBox, QSlider
-    from palantir import SettingsDialog
+    from istari import SettingsDialog
     dlg = SettingsDialog(default_cfg)
     missing = []
     for widget_type in (QPushButton, QCheckBox, QSlider):

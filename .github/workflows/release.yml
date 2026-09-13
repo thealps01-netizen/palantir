@@ -58,7 +58,7 @@ jobs:
         run: python tools/make_icon.py
 
       - name: Build with PyInstaller
-        run: pyinstaller Palantir.spec
+        run: pyinstaller Istari.spec
 
       - name: Install Inno Setup
         run: choco install innosetup --yes --no-progress
@@ -67,18 +67,18 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.VERSION }}"
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=$version" palantir.iss
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=$version" istari.iss
 
       - name: Generate SHA256 checksum
         shell: pwsh
         run: |
-          $hash = (Get-FileHash installer/Palantir_Setup.exe -Algorithm SHA256).Hash.ToLower()
-          "$hash  Palantir_Setup.exe" | Out-File -Encoding ascii installer/Palantir_Setup.exe.sha256
+          $hash = (Get-FileHash installer/Istari_Setup.exe -Algorithm SHA256).Hash.ToLower()
+          "$hash  Istari_Setup.exe" | Out-File -Encoding ascii installer/Istari_Setup.exe.sha256
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            installer/Palantir_Setup.exe
-            installer/Palantir_Setup.exe.sha256
+            installer/Istari_Setup.exe
+            installer/Istari_Setup.exe.sha256
           generate_release_notes: true

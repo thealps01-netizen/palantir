@@ -1,4 +1,4 @@
-"""themes.py — Theme definitions and stylesheet builders for Palantir."""
+"""themes.py — Theme definitions and stylesheet builders for Istari."""
 
 import ctypes
 import functools
@@ -62,7 +62,7 @@ THEMES = {
 # ── Stylesheet builders ────────────────────────────────────────────────────────
 
 _WIDGET_CSS_TPL = """
-Palantir {{
+Istari {{
     background: {bg};
     border: 1px solid {border};
     border-radius: {radius};

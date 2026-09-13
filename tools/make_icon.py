@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate palantir.ico — Palantír medallion (outer cross-frame, ornate band, glowing orb).
+"""Generate istari.ico — Istari medallion (outer cross-frame, ornate band, glowing orb).
 Requires: pip install Pillow numpy
 """
 
@@ -215,10 +215,10 @@ def _round_existing(path):
 
 
 def main():
-    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "palantir.ico")
+    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "istari.ico")
     if os.path.exists(out):
         _round_existing(out)
-        print(f"palantir.ico  circular mask applied  ->  {out}")
+        print(f"istari.ico  circular mask applied  ->  {out}")
         return
     sizes  = [256, 128, 64, 48, 32, 16]
     frames = [make_frame(s) for s in sizes]
@@ -227,7 +227,7 @@ def main():
         sizes=[(s, s) for s in sizes],
         append_images=frames[1:],
     )
-    print(f"palantir.ico  ->  {out}")
+    print(f"istari.ico  ->  {out}")
 
 
 if __name__ == "__main__":

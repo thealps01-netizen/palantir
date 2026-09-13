@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""palantir.py — PALANTÍR hardware monitor overlay (UI + entry point)."""
+"""istari.py — ISTARI hardware monitor overlay (UI + entry point)."""
 
 import sys, os, time, ctypes
 from PyQt6.QtWidgets import (
@@ -16,7 +16,7 @@ import crash_handler
 crash_handler.install()
 
 from logger import get_logger, LOG_DIR
-_log = get_logger("palantir")
+_log = get_logger("istari")
 
 from hw      import get_data, HardwareWorker
 from updater import UpdateChecker, prompt_and_install
@@ -25,7 +25,7 @@ from dialogs import WelcomeDialog, SettingsDialog
 
 # ── GitHub repo — update these before each release ────────────────────────────
 _GITHUB_OWNER = "thealps01-netizen"
-_GITHUB_REPO  = "palantir"                 # ← repo adı
+_GITHUB_REPO  = "istari"                 # ← repo adı
 from cfg import (
     SENSOR_CATALOG, SETTINGS_FILE,
     load_cfg, save_cfg, eff_color, default_color,
@@ -36,7 +36,7 @@ from cfg import (
 
 
 # ── Main widget ────────────────────────────────────────────────────────────────
-class Palantir(QWidget):
+class Istari(QWidget):
     def __init__(self):
         super().__init__()
         self.cfg            = load_cfg()
@@ -88,7 +88,7 @@ class Palantir(QWidget):
         self._hw_worker.data_ready.connect(self._on_data)
         self._hw_thread.start()
         self._start_time = time.monotonic()
-        _log.info("Palantir started.")
+        _log.info("Istari started.")
 
         self._tray = self._setup_tray()
 
@@ -110,13 +110,13 @@ class Palantir(QWidget):
         ico  = _icon_path()
         if os.path.exists(ico):
             tray.setIcon(QIcon(ico))
-        tray.setToolTip("Palantir")
+        tray.setToolTip("Istari")
 
         menu = QMenu()
         act_settings = menu.addAction("\u2699  Settings")
         act_updates  = menu.addAction("\u27f3  Check for Updates")
         menu.addSeparator()
-        act_quit = menu.addAction("\u2715  Quit Palantir")
+        act_quit = menu.addAction("\u2715  Quit Istari")
 
         act_settings.triggered.connect(self._open_settings)
         act_updates.triggered.connect(lambda: self._check_for_updates(manual=True))
@@ -138,7 +138,7 @@ class Palantir(QWidget):
         if self._last_src in (None, "N/A"):
             _log.warning("No sensor data after 45s — MSI Afterburner may not be running.")
             self._tray.showMessage(
-                "Palantir — No Sensor Data",
+                "Istari — No Sensor Data",
                 "MSI Afterburner does not appear to be running.\n"
                 "Launch Afterburner to enable live sensor data.",
                 QSystemTrayIcon.MessageIcon.Warning,
@@ -166,7 +166,7 @@ class Palantir(QWidget):
 
     def _on_no_update(self) -> None:
         self._tray.showMessage(
-            "Palantir",
+            "Istari",
             "You're up to date! No new version available.",
             QSystemTrayIcon.MessageIcon.Information,
             3000,
@@ -174,14 +174,14 @@ class Palantir(QWidget):
 
     def _on_check_failed(self) -> None:
         self._tray.showMessage(
-            "Palantir",
+            "Istari",
             "Could not reach the update server. Check your connection.",
             QSystemTrayIcon.MessageIcon.Warning,
             4000,
         )
 
     def _quit(self):
-        _log.info("Palantir shutting down.")
+        _log.info("Istari shutting down.")
         self._quitting = True
         if self.isVisible():
             self._play_outro()
@@ -453,7 +453,7 @@ class Palantir(QWidget):
 
         self._title_row_layout = QHBoxLayout()
         self._title_row_layout.setContentsMargins(0, 0, 0, self._s(10))
-        self._title_lbl = QLabel("PALANTÍR")
+        self._title_lbl = QLabel("ISTARI")
         self._gear = QLabel("\u22ee")
         self._gear.setCursor(Qt.CursorShape.PointingHandCursor)
         self._gear.setToolTip("Settings")
@@ -885,7 +885,7 @@ class SplashScreen(QWidget):
         font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 3)
         font.setBold(True)
         p.setFont(font)
-        p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "PALANTÍR")
+        p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "ISTARI")
 
         p.end()
 
@@ -896,7 +896,7 @@ def _icon_path():
         base = getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
     else:
         base = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(base, "palantir.ico")
+    return os.path.join(base, "istari.ico")
 
 
 if __name__ == "__main__":
@@ -905,13 +905,13 @@ if __name__ == "__main__":
     # ── Windows App User Model ID — proper taskbar grouping & pin support ────
     try:
         _ct.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-            "thealps01-netizen.Palantir"
+            "thealps01-netizen.Istari"
         )
     except Exception:
         pass
 
     # ── Single-instance guard ──────────────────────────────────────────────────
-    _mutex = _ct.windll.kernel32.CreateMutexW(None, False, "PalantirSingleInstanceMutex")
+    _mutex = _ct.windll.kernel32.CreateMutexW(None, False, "IstariSingleInstanceMutex")
     if _ct.windll.kernel32.GetLastError() == 183:
         _log.warning("Another instance is already running. Exiting.")
         sys.exit(0)
@@ -922,11 +922,11 @@ if __name__ == "__main__":
         _Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
 
-    _log.info("Starting Palantir (Python %s)", sys.version.split()[0])
+    _log.info("Starting Istari (Python %s)", sys.version.split()[0])
 
     app = QApplication(sys.argv)
-    app.setApplicationName("Palantir")
-    app.setApplicationDisplayName("Palantir")
+    app.setApplicationName("Istari")
+    app.setApplicationDisplayName("Istari")
 
     ico = _icon_path()
     if os.path.exists(ico):
@@ -939,7 +939,7 @@ if __name__ == "__main__":
         set_startup(True)
         _log.info("Startup registry entry refreshed.")
 
-    w = Palantir()
+    w = Istari()
     w._apply_no_activate()
     _log.info("Log directory: %s", LOG_DIR)
 

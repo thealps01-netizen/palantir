@@ -6,7 +6,7 @@ __pycache__/
 .Python
 *.egg-info/
 
-# PyInstaller output (keep Palantir.spec tracked)
+# PyInstaller output (keep Istari.spec tracked)
 dist/
 build/
 installer/

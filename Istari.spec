@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['palantir.py'],
+    ['istari.py'],
     pathex=[],
     binaries=[],
-    datas=[('palantir.ico', '.')],
+    datas=[('istari.ico', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -21,7 +21,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='Palantir',
+    name='Istari',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -32,9 +32,9 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['palantir.ico'],
+    icon=['istari.ico'],
     # Embedded application manifest (DPI awareness, UAC, OS compatibility)
-    manifest='palantir.manifest',
+    manifest='istari.manifest',
     # Windows file version info (shown in exe Properties dialog)
     version='file_version_info.txt',
 )
@@ -46,5 +46,5 @@ coll = COLLECT(
     strip=False,
     upx=False,
     upx_exclude=[],
-    name='Palantir',
+    name='Istari',
 )

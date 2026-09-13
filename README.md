@@ -1,12 +1,12 @@
-# PALANTÍR
+# ISTARI
 
 **Lightweight always-on-top hardware monitor overlay for Windows.**
 Real-time FPS, GPU/CPU usage, temperatures, power draw, clocks and RAM — right on your screen while gaming or working.
 
-[![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078d4?logo=windows)](https://github.com/thealps01-netizen/palantir/releases/latest)
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078d4?logo=windows)](https://github.com/thealps01-netizen/istari/releases/latest)
 [![Python](https://img.shields.io/badge/python-3.10%2B-3776ab?logo=python&logoColor=white)](https://python.org)
-[![Release](https://img.shields.io/github/v/release/thealps01-netizen/palantir?color=6474f0)](https://github.com/thealps01-netizen/palantir/releases/latest)
-[![License](https://img.shields.io/github/license/thealps01-netizen/palantir)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/thealps01-netizen/istari?color=6474f0)](https://github.com/thealps01-netizen/istari/releases/latest)
+[![License](https://img.shields.io/github/license/thealps01-netizen/istari)](LICENSE)
 
 ---
 
@@ -55,14 +55,14 @@ Real-time FPS, GPU/CPU usage, temperatures, power draw, clocks and RAM — right
 - **Windows 10 or 11** (64-bit)
 - **[MSI Afterburner](https://www.msi.com/Landing/afterburner)** with hardware monitoring enabled
 
-> Palantir reads sensor data from MSI Afterburner's shared memory. Afterburner must be running in the background.
+> Istari reads sensor data from MSI Afterburner's shared memory. Afterburner must be running in the background.
 
 ---
 
 ## Installation
 
-1. Go to [**Releases**](https://github.com/thealps01-netizen/palantir/releases/latest)
-2. Download `Palantir_Setup.exe`
+1. Go to [**Releases**](https://github.com/thealps01-netizen/istari/releases/latest)
+2. Download `Istari_Setup.exe`
 3. Run the installer
 
 > **Windows SmartScreen warning:** You may see "Windows protected your PC" on first run.
@@ -96,10 +96,10 @@ Real-time FPS, GPU/CPU usage, temperatures, power draw, clocks and RAM — right
 ## Developer Setup
 
 ```bash
-git clone https://github.com/thealps01-netizen/palantir.git
-cd palantir
+git clone https://github.com/thealps01-netizen/istari.git
+cd istari
 pip install -r requirements.txt
-python palantir.py
+python istari.py
 ```
 
 ### Run Tests
@@ -119,7 +119,7 @@ Requires [PyInstaller](https://pyinstaller.org) and [Inno Setup 6](https://jrsof
 build.bat
 ```
 
-Produces `installer/Palantir_Setup.exe` — a self-contained Windows installer.
+Produces `installer/Istari_Setup.exe` — a self-contained Windows installer.
 
 ---
 
@@ -127,7 +127,7 @@ Produces `installer/Palantir_Setup.exe` — a self-contained Windows installer.
 
 | File | Description |
 |------|-------------|
-| `palantir.py` | Main UI widget, splash screen, animations, entry point |
+| `istari.py` | Main UI widget, splash screen, animations, entry point |
 | `hw.py` | Hardware data sources — MAHM shared memory + Windows API |
 | `cfg.py` | Sensor catalog, settings persistence, startup registry |
 | `themes.py` | QSS theme builders — dark, light, high contrast |
@@ -137,17 +137,17 @@ Produces `installer/Palantir_Setup.exe` — a self-contained Windows installer.
 | `crash_handler.py` | Global exception handler with crash reports |
 | `version.py` | Single source of truth for version |
 | `build.bat` | Build automation (PyInstaller → Inno Setup) |
-| `palantir.iss` | Inno Setup installer configuration |
+| `istari.iss` | Inno Setup installer configuration |
 
 ---
 
 ## Logs
 
-Stored in `%LOCALAPPDATA%\Palantir\logs\`:
+Stored in `%LOCALAPPDATA%\Istari\logs\`:
 
 | File | Description |
 |------|-------------|
-| `palantir.log` | Application log — 1 MB rotating, 2 backups |
+| `istari.log` | Application log — 1 MB rotating, 2 backups |
 | `crash_YYYYMMDD_HHMMSS.log` | Crash reports with full traceback |
 
 ---

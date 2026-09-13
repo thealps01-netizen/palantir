@@ -1,4 +1,4 @@
-"""dialogs.py — UI helpers, WelcomeDialog and SettingsDialog for Palantir."""
+"""dialogs.py — UI helpers, WelcomeDialog and SettingsDialog for Istari."""
 
 from PyQt6.QtWidgets import (
     QWidget, QDialog, QLabel, QHBoxLayout, QVBoxLayout,
@@ -89,7 +89,7 @@ class SPanel(QWidget):
 class WelcomeDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Welcome to Palantir")
+        self.setWindowTitle("Welcome to Istari")
         self.setWindowFlags(
             Qt.WindowType.Dialog |
             Qt.WindowType.FramelessWindowHint |
@@ -116,7 +116,7 @@ class WelcomeDialog(QDialog):
         hdr = QHBoxLayout()
         ico = QLabel("⚡")
         ico.setStyleSheet("color:#6474f0; font:16pt; background:transparent; padding:0;")
-        title = QLabel("PALANTIR")
+        title = QLabel("ISTARI")
         title.setStyleSheet(
             "color:#8080e0; font:bold 10pt 'Bahnschrift','Segoe UI';"
             " letter-spacing:4px; background:transparent;"
@@ -143,7 +143,7 @@ class WelcomeDialog(QDialog):
             )
             return lbl
 
-        inner.addWidget(_line("Welcome! Palantir reads sensor data from "
+        inner.addWidget(_line("Welcome! Istari reads sensor data from "
                               "<b>MSI Afterburner</b>."))
         inner.addWidget(_line("To see live sensor values:"))
 
@@ -398,7 +398,7 @@ class SettingsDialog(QDialog):
         self.chk_startup = QCheckBox("  Launch at Windows startup")
         self.chk_startup.setChecked(is_startup_enabled())
         self.chk_startup.setAccessibleName("Launch at Windows startup")
-        self.chk_startup.setAccessibleDescription("Automatically start Palantir when Windows boots")
+        self.chk_startup.setAccessibleDescription("Automatically start Istari when Windows boots")
         layout.addWidget(self.chk_startup)
 
         # ── SENSORS ───────────────────────────────────────────────────────────

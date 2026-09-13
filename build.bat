@@ -1,7 +1,7 @@
 @echo off
-title Palantir — Build
+title Istari — Build
 echo ============================================
-echo   Palantir  Build + Installer
+echo   Istari  Build + Installer
 echo ============================================
 echo.
 
@@ -35,9 +35,9 @@ powershell -Command " ^
     -replace \"'ProductVersion',\s*'.*?'\", \"'ProductVersion', '$v.0'\" ^
   | Set-Content file_version_info.txt"
 
-:: ── Build exe (onedir via Palantir.spec) ─────────────────────────────────────
-echo  [3/4] Building Palantir.exe...
-python -m PyInstaller Palantir.spec --noconfirm
+:: ── Build exe (onedir via Istari.spec) ─────────────────────────────────────
+echo  [3/4] Building Istari.exe...
+python -m PyInstaller Istari.spec --noconfirm
 if errorlevel 1 ( echo  ERROR: PyInstaller build failed. & pause & exit /b 1 )
 
 :: ── Create installer with Inno Setup ─────────────────────────────────────────
@@ -58,17 +58,17 @@ if not defined ISCC (
 
 if defined ISCC (
     for /f %%v in ('python -c "from version import __version__; print(__version__)"') do set APP_VER=%%v
-    %ISCC% /DAppVersion=%APP_VER% palantir.iss
+    %ISCC% /DAppVersion=%APP_VER% istari.iss
     if errorlevel 1 ( echo  ERROR: Inno Setup failed. & pause & exit /b 1 )
     echo.
     echo  ============================================
-    echo   Done!  installer\Palantir_Setup.exe
+    echo   Done!  installer\Istari_Setup.exe
     echo  ============================================
     echo.
 ) else (
     echo.
     echo  Inno Setup not found — skipping installer.
-    echo  Portable exe: dist\Palantir.exe
+    echo  Portable exe: dist\Istari.exe
     echo.
     echo  To create a proper installer:
     echo    1. Download Inno Setup from https://jrsoftware.org/isinfo.php

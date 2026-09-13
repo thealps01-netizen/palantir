@@ -9,7 +9,7 @@ _log = get_logger("cfg")
 
 # ── Windows startup registry ──────────────────────────────────────────────────
 _STARTUP_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
-_APP_NAME    = "Palantir"
+_APP_NAME    = "Istari"
 
 
 def _startup_cmd():
@@ -51,7 +51,7 @@ def set_startup(enabled):
 # ── Settings file path ────────────────────────────────────────────────────────
 _DIR = os.path.join(
     os.environ.get("LOCALAPPDATA", os.path.expanduser("~")),
-    "Palantir",
+    "Istari",
 )
 os.makedirs(_DIR, exist_ok=True)
 

@@ -3,15 +3,15 @@
 Checks the latest release tag on GitHub in a background QThread.
 If a newer version exists, emits `update_available(version, download_url)`.
 
-Usage in palantir.py:
+Usage in istari.py:
     from updater import UpdateChecker, prompt_and_install
-    checker = UpdateChecker("thealps01-netizen", "palantir")   # ← GitHub user/repo
+    checker = UpdateChecker("thealps01-netizen", "istari")   # ← GitHub user/repo
     checker.update_available.connect(on_update)
     checker.start()
 
 GitHub Release convention:
     Tag:   v1.2.3
-    Asset: Palantir_Setup.exe   (the installer)
+    Asset: Istari_Setup.exe   (the installer)
 """
 
 import re
@@ -63,7 +63,7 @@ def _fetch_latest(owner: str, repo: str) -> dict | None:
         url,
         headers={
             "Accept":     "application/vnd.github+json",
-            "User-Agent": f"Palantir-Updater/{__version__}",
+            "User-Agent": f"Istari-Updater/{__version__}",
         },
     )
     try:
@@ -166,8 +166,8 @@ class InstallerDownloader(QObject):
 
     def _run(self) -> None:
         try:
-            suffix  = os.path.basename(self._url.split("?")[0]) or "Palantir_Setup.exe"
-            tmp_dir = tempfile.mkdtemp(prefix="palantir_update_")
+            suffix  = os.path.basename(self._url.split("?")[0]) or "Istari_Setup.exe"
+            tmp_dir = tempfile.mkdtemp(prefix="istari_update_")
             dest    = os.path.join(tmp_dir, suffix)
             _log.info("Downloading update from %s → %s", self._url, dest)
 
@@ -185,7 +185,7 @@ class InstallerDownloader(QObject):
             try:
                 ctx = ssl.create_default_context()
                 with urllib.request.urlopen(
-                    urllib.request.Request(sha256_url, headers={"User-Agent": "Palantir-Updater/1.0"}),
+                    urllib.request.Request(sha256_url, headers={"User-Agent": "Istari-Updater/1.0"}),
                     timeout=TIMEOUT,
                     context=ctx,
                 ) as r:
@@ -345,7 +345,7 @@ class UpdateDialog(_DraggableDialog):
         self._tag   = tag
         self._choice = self.LATER
 
-        self.setWindowTitle("Palantir — Update Available")
+        self.setWindowTitle("Istari — Update Available")
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setFixedWidth(400)
@@ -363,7 +363,7 @@ class UpdateDialog(_DraggableDialog):
         # ── Header ────────────────────────────────────────────────────────────
         title = QLabel("New Update")
         title.setObjectName("title")
-        subtitle = QLabel("An update is available for Palantir.")
+        subtitle = QLabel("An update is available for Istari.")
         subtitle.setObjectName("subtitle")
         inner.addWidget(title)
         inner.addWidget(subtitle)
@@ -453,7 +453,7 @@ class DownloadProgressDialog(_DraggableDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Palantir — Downloading")
+        self.setWindowTitle("Istari — Downloading")
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setFixedSize(360, 120)
@@ -491,7 +491,7 @@ class DownloadProgressDialog(_DraggableDialog):
         QApplication.processEvents()
 
     def set_installing(self) -> None:
-        self.setWindowTitle("Palantir — Installing")
+        self.setWindowTitle("Istari — Installing")
         for child in self.findChildren(QLabel):
             if child.objectName() == "title":
                 child.setText("Installing update…")
@@ -538,11 +538,11 @@ def _friendly_error(raw: str) -> tuple[str, str]:
 
 
 class _ErrorDialog(_DraggableDialog):
-    """Styled error dialog matching the Palantir dark theme."""
+    """Styled error dialog matching the Istari dark theme."""
 
     def __init__(self, title: str, body: str, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Palantir — Update Error")
+        self.setWindowTitle("Istari — Update Error")
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setFixedWidth(380)

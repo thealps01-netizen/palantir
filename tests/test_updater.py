@@ -57,7 +57,7 @@ def test_is_newer_uses_version_py_default():
 def test_find_installer_asset_finds_exe():
     release = {
         "assets": [
-            {"name": "Palantir_Setup.exe", "browser_download_url": "https://example.com/setup.exe"},
+            {"name": "Istari_Setup.exe", "browser_download_url": "https://example.com/setup.exe"},
             {"name": "source.zip",         "browser_download_url": "https://example.com/source.zip"},
         ]
     }
@@ -118,7 +118,7 @@ def test_sha256_mismatch_raises_value_error():
 
     # Write a dummy exe file
     tmp_dir = tempfile.mkdtemp()
-    exe_path = os.path.join(tmp_dir, "Palantir_Setup.exe")
+    exe_path = os.path.join(tmp_dir, "Istari_Setup.exe")
     with open(exe_path, "wb") as f:
         f.write(b"fake exe content")
 
@@ -134,7 +134,7 @@ def test_sha256_mismatch_raises_value_error():
                side_effect=lambda url, dest, reporthook: open(dest, "wb").write(b"fake exe content")):
         with patch("updater.urllib.request.urlopen", return_value=sidecar_response):
             downloader = InstallerDownloader.__new__(InstallerDownloader)
-            downloader._url = "https://example.com/Palantir_Setup.exe"
+            downloader._url = "https://example.com/Istari_Setup.exe"
 
             errors = []
             downloader.error = MagicMock()
@@ -171,7 +171,7 @@ def test_sha256_match_succeeds():
     with patch("updater.urllib.request.urlretrieve", side_effect=fake_urlretrieve):
         with patch("updater.urllib.request.urlopen", return_value=sidecar_response):
             downloader = InstallerDownloader.__new__(InstallerDownloader)
-            downloader._url = "https://example.com/Palantir_Setup.exe"
+            downloader._url = "https://example.com/Istari_Setup.exe"
             downloader.error = MagicMock()
             downloader.finished = MagicMock()
             downloader.finished.emit = lambda p: finished_paths.append(p)
@@ -201,7 +201,7 @@ def test_sha256_no_sidecar_continues():
         with patch("updater.urllib.request.urlopen",
                    side_effect=urllib.error.URLError("no sidecar")):
             downloader = InstallerDownloader.__new__(InstallerDownloader)
-            downloader._url = "https://example.com/Palantir_Setup.exe"
+            downloader._url = "https://example.com/Istari_Setup.exe"
             downloader.error = MagicMock()
             downloader.finished = MagicMock()
             downloader.finished.emit = lambda p: finished_paths.append(p)

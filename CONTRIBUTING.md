@@ -1,12 +1,12 @@
-# Contributing to Palantir
+# Contributing to Istari
 
 Thanks for your interest in contributing!
 
 ## Setup
 
 ```bash
-git clone https://github.com/thealps01-netizen/palantir.git
-cd palantir
+git clone https://github.com/thealps01-netizen/istari.git
+cd istari
 pip install -r requirements-dev.txt
 ```
 
@@ -30,7 +30,7 @@ All tests must pass before submitting a pull request.
 - Follow existing code style (no formatter enforced, just be consistent)
 - Keep functions focused and small
 - New hardware sensors go in `cfg.py` → `SENSOR_CATALOG`
-- UI changes go in `dialogs.py` (settings/welcome) or `palantir.py` (main overlay)
+- UI changes go in `dialogs.py` (settings/welcome) or `istari.py` (main overlay)
 - Theme/color changes go in `themes.py`
 
 ## Building Locally

@@ -1,6 +1,6 @@
-"""logger.py — Centralised logging setup for Palantir.
+"""logger.py — Centralised logging setup for Istari.
 
-Creates a rotating log file under %LOCALAPPDATA%/Palantir/logs/
+Creates a rotating log file under %LOCALAPPDATA%/Istari/logs/
 and exposes a get_logger() helper used by every module.
 """
 
@@ -13,13 +13,13 @@ from logging.handlers import RotatingFileHandler
 if getattr(sys, "frozen", False):
     _BASE = os.path.join(
         os.environ.get("LOCALAPPDATA", os.path.dirname(sys.executable)),
-        "Palantir",
+        "Istari",
     )
 else:
     _BASE = os.path.dirname(os.path.abspath(__file__))
 
 LOG_DIR  = os.path.join(_BASE, "logs")
-LOG_FILE = os.path.join(LOG_DIR, "palantir.log")
+LOG_FILE = os.path.join(LOG_DIR, "istari.log")
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
@@ -38,15 +38,15 @@ _file_handler = RotatingFileHandler(
 _file_handler.setFormatter(_fmt)
 _file_handler.setLevel(logging.DEBUG)
 
-_root = logging.getLogger("palantir")
+_root = logging.getLogger("istari")
 _root.setLevel(logging.DEBUG)
 if not _root.handlers:
     _root.addHandler(_file_handler)
 _root.propagate = False
 
 
-def get_logger(name: str = "palantir") -> logging.Logger:
-    """Return a child logger under the 'palantir' namespace."""
-    if name == "palantir":
+def get_logger(name: str = "istari") -> logging.Logger:
+    """Return a child logger under the 'istari' namespace."""
+    if name == "istari":
         return _root
-    return _root.getChild(name.replace("palantir.", ""))
+    return _root.getChild(name.replace("istari.", ""))

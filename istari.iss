@@ -1,17 +1,17 @@
-#define AppName    "Palantir"
+#define AppName    "Istari"
 #ifndef AppVersion
   #define AppVersion "1.0.12"
 #endif
-#define AppExe     "Palantir.exe"
-#define AppDir     "dist\Palantir"
+#define AppExe     "Istari.exe"
+#define AppDir     "dist\Istari"
 
 [Setup]
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher=Muhammed Enes Alpler
-AppPublisherURL=https://github.com/thealps01-netizen/palantir
-AppSupportURL=https://github.com/thealps01-netizen/palantir/issues
-AppUpdatesURL=https://github.com/thealps01-netizen/palantir/releases
+AppPublisherURL=https://github.com/thealps01-netizen/istari
+AppSupportURL=https://github.com/thealps01-netizen/istari/issues
+AppUpdatesURL=https://github.com/thealps01-netizen/istari/releases
 ; AppId uniquely identifies this app to Windows — never change this GUID after release
 AppId={{8F3A2B1C-4D5E-6F7A-8B9C-0D1E2F3A4B5C}
 ; CloseApplications uses Restart Manager to gracefully close the running app before install
@@ -26,13 +26,13 @@ DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 OutputDir=installer
-OutputBaseFilename=Palantir_Setup
+OutputBaseFilename=Istari_Setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 UninstallDisplayName={#AppName}
-UninstallDisplayIcon={app}\palantir.ico
-SetupIconFile=palantir.ico
+UninstallDisplayIcon={app}\istari.ico
+SetupIconFile=istari.ico
 PrivilegesRequired=admin
 MinVersion=10.0
 ArchitecturesAllowed=x64compatible
@@ -46,12 +46,12 @@ Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription
 
 [Files]
 Source: "{#AppDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "palantir.ico";         DestDir: "{app}"; Flags: ignoreversion
+Source: "istari.ico";         DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#AppName}";              Filename: "{app}\{#AppExe}"; IconFilename: "{app}\palantir.ico"
+Name: "{group}\{#AppName}";              Filename: "{app}\{#AppExe}"; IconFilename: "{app}\istari.ico"
 Name: "{group}\Uninstall {#AppName}";    Filename: "{uninstallexe}"
-Name: "{userdesktop}\{#AppName}";        Filename: "{app}\{#AppExe}"; IconFilename: "{app}\palantir.ico"; Tasks: desktopicon
+Name: "{userdesktop}\{#AppName}";        Filename: "{app}\{#AppExe}"; IconFilename: "{app}\istari.ico"; Tasks: desktopicon
 
 [Run]
 ; Interactive install — user can choose to launch from the wizard
@@ -61,7 +61,7 @@ Filename: "{app}\{#AppExe}"; Flags: nowait; Check: WizardSilent
 
 [UninstallRun]
 ; Force-kill the app before uninstaller tries to delete the exe
-Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM {#AppExe}"; Flags: runhidden waituntilterminated; RunOnceId: "KillPalantir"
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM {#AppExe}"; Flags: runhidden waituntilterminated; RunOnceId: "KillIstari"
 
 [UninstallDelete]
 ; Clean up app directory if empty after uninstall
